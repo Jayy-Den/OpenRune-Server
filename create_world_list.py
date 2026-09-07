@@ -1,22 +1,32 @@
 import struct
 
-# Match exact blurite world_list.ws format
+# Exact blurite world_list.ws format:
+# 0000 0021 0001 00ff 0288 0001 3132 372e 302e 302e 3100 4465 7665 6c6f 706d 656e 7400 0100 00
+# Length = 33 (0x21)
+# Format after length:
+#   - 2 bytes: 0x0001 (version)
+#   - 4 bytes: 0x00ff0288 (flags, big-endian!)
+#   - 2 bytes: 0x0001 (world count)
+#   - IP null-terminated
+#   - Name null-terminated
+#   - 3 bytes: 0x010000 (trailer)
+
 ip = b'127.0.0.1'
 name = b'OpenRune Server'
-properties = struct.pack('<I', 42467329)  # Little-endian
 
-# Build world entry
-world_entry = ip + b'\x00' + name + b'\x00' + properties
+# Build after length field - use big-endian for flags
+data = struct.pack('>H', 1)           # version = 0x0001 (big-endian)
+data += struct.pack('>I', 0x00ff0288) # flags = 0x00ff0288 (big-endian!)
+data += struct.pack('>H', 1)          # world count = 0x0001 (big-endian)
+data += ip + b'\x00'                  # IP null-terminated
+data += name + b'\x00'                # Name null-terminated
+data += b'\x01\x00\x00'              # Trailer
 
-# Header: 4-byte length + 2-byte version + 4-byte flags + 1-byte world_count
-length = len(world_entry)
-header = struct.pack('<I', length)      # Length (little-endian)
-header += struct.pack('<H', 1)          # Version
-header += struct.pack('<I', 0x0288)     # Flags
-header += struct.pack('<B', 1)          # World count
+length = len(data)
+packet = struct.pack('>I', length) + data  # Length in big-endian
 
-data = header + world_entry
 with open('C:\Users\yourname/Documents/OpenRune-Server/.data/world_list.ws', 'wb') as f:
-    f.write(data)
-print(f'Written {len(data)} bytes')
-print('Hex:', data.hex())
+    f.write(packet)
+
+print(f'Written {len(packet)} bytes (length={length})')
+print(f'Hex: {packet.hex()}')
