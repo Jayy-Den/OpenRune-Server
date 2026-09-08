@@ -12,6 +12,18 @@ rem  overrides command-line -D flags.
 rem ============================================================
 setlocal
 
+rem --- Guard: refuse to launch a second RSProx instance ---
+rem Two RSProx services from one ~/.rsprox collide on the hardcoded worldlist
+rem port (43600 + sessionId) and crash with a netty BindException.
+powershell -NoProfile -Command "if (Get-Process java, javaw -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -like 'RSProx*' }) { exit 1 } else { exit 0 }" >nul 2>&1
+if %errorlevel%==1 (
+    echo [ERROR] An RSProx window is already open.
+    echo         Two RSProx instances collide on their worldlist port and crash.
+    echo         Close the existing RSProx window first ^(or just use it^).
+    pause
+    exit /b 1
+)
+
 set "_JAVA_OPTIONS=-Dsun.java2d.d3d=false"
 set "RS_REPO=%USERPROFILE%\.rsprox\launcher\repository"
 

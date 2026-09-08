@@ -9,6 +9,8 @@ cd %USERPROFILE%\Documents\OpenRune-Server
 ```
 Wait for: `OpenRune Server Successfully initialized`
 
+> **One-click alternative:** run `start-all.bat` (repo root) — it starts the jav config server, the game server (with port guards), and RSProx with the render fix, in order.
+
 ### Step 2: Connect with RSProx
 1. RSProx reads its target list from `%USERPROFILE%\.rsprox\proxy-targets.yaml` — it must point at the local jav config server and use the server's client key modulus:
    ```yaml
