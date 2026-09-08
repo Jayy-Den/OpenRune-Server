@@ -1,0 +1,4 @@
+# Transient artifacts of the playtest rig (keep the .java sources and .cmd)
+*.class
+driver.log
+*.png
