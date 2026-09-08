@@ -26,12 +26,7 @@ Wait for: `OpenRune Server Successfully initialized`
    start-rsprox.bat
    ```
    (RSProx's built-in launcher defaults to Java2D DirectDraw on Windows, which black-screens on some AMD drivers. Patching RSProx's jars isn't durable — it hash-verifies and re-downloads them — so the env-var script is the permanent fix.)
-3. **Dedicated GPU (optional):** Windows may route Java to the integrated GPU by default. Pin it once in PowerShell:
-   ```powershell
-   $gp = 'HKCU:\Software\Microsoft\DirectX\UserGpuPreferences'
-   Set-ItemProperty $gp 'C:\Program Files\Amazon Corretto\jdk21.0.7_6\bin\javaw.exe' 'GpuPreference=2;'
-   Set-ItemProperty $gp 'C:\Program Files\Amazon Corretto\jdk21.0.7_6\bin\java.exe' 'GpuPreference=2;'
-   ```
+3. **Dedicated GPU (recommended, once per machine):** Windows may route Java to the integrated GPU by default — the adapter whose driver black-screens. Run `setup-gpu-pin.bat` (repo root) to pin Java to the high-performance GPU; takes effect for newly started RSProx/client processes.
 4. In the RSProx window, select "OpenRune Server" and click **Launch Session** — the RuneLite client boots, downloads the rev-240 cache, and shows the login screen.
 5. If the login screen stays black: set `runelite.plugins.GpuPlugin=false` in the active profile (`%USERPROFILE%\.rlcustom\profiles2\*.properties`) and relaunch — that forces the CPU software renderer, which always works.
 
