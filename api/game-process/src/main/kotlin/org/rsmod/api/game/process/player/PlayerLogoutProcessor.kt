@@ -1,6 +1,7 @@
 package org.rsmod.api.game.process.player
 
 import jakarta.inject.Inject
+import com.github.michaelbull.logging.InlineLogger
 import org.rsmod.api.registry.account.AccountRegistry
 import org.rsmod.events.EventBus
 import org.rsmod.game.entity.Player
@@ -21,7 +22,12 @@ constructor(private val eventBus: EventBus, private val accountRegistry: Account
     // Finalizes the logout process. The player remains in the player list until their account
     // save callback completes, which is guaranteed to occur.
     private fun Player.completeLogout() {
+        logger.info { "Logout completed user='$username' characterId=$characterId slot=$slotId" }
         eventBus.publish(SessionStateEvent.Logout(this))
         accountRegistry.queueLogout(this)
+    }
+
+    private companion object {
+        private val logger = InlineLogger()
     }
 }
