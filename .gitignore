@@ -60,3 +60,6 @@ logs/
 .claude/settings.local.json
 .mcp.json
 /.data/jav_local_240.ws
+
+# Freebuff client runtime state
+.git-rewrite/
