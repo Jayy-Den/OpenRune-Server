@@ -418,6 +418,11 @@ class AccountLoadResponseHook(
         eventBus.publish(SessionStart(player, session))
         val register = playerRegistry.add(player)
         if (register.isSuccess()) {
+            val newAccount = loadResponse.isNewAccount()
+            logger.info {
+                "Login accepted user='${player.username}' characterId=$characterId world=$world " +
+                    "slot=$slotId${if (newAccount) " (new account)" else ""}"
+            }
             persistTrustedDevicesIfNeeded(loadResponse.account.accountId, player)
             eventBus.publish(SessionStateEvent.Login(player))
             eventBus.publish(SessionStateEvent.EngineLogin(player))
