@@ -63,3 +63,10 @@ logs/
 
 # Freebuff client runtime state
 .git-rewrite/
+
+# Local rig tooling & scratch (machine-specific, not for the fork)
+.agents/
+bootstrap-tmp.json
+tree.json
+start-http-server.bat
+stop-server.bat

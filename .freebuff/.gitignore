@@ -4,3 +4,9 @@ driver.log
 *.png
 *.ps1
 project-id
+
+# Session scratch: failed-boot logs, config backups, screenshot dumps
+*.log.err
+*.bak
+mcp-server.json
+mcp-shots/

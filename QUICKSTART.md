@@ -96,9 +96,26 @@ cd %USERPROFILE%\Documents\OpenRune-Server
 ./gradlew install
 ```
 
+**Computer-control MCP (agent "eyes/hands" for QA):**
+- Config lives in `.agents/mcp.json` and `.freebuff/mcp-server.json` (both written 2026-09-09): launches `uvx computer-control-mcp@latest` (uvx resolves from the user's local hermes bin), screenshots dir `.freebuff/mcp-shots`.
+- **Verified working end-to-end (2026-09-09):** stdio handshake OK (server `ComputerControlMCP` v1.13.0), 15 tools listed (`take_screenshot`, `take_screenshot_with_ocr`, `click_screen`, `type_text`, `press_keys`, `list_windows`, `key_down/up`, `mouse_down/up/move`, `drag_mouse`, `activate_window`, `get_screen_size`, `wait_milliseconds`), and a real `take_screenshot` call returned a live PNG (inline base64 — the shots dir stays empty by design).
+- **Why it never attached (found 2026-09-09 by reading orchestrator.js):** Freebuff's orchestrator only reads MCP config from the **home directory**: `~/.agents/mcp.json` (`{"mcpServers": {...}}`), with per-server `enabled`/approval state in `~/.freebuff/mcp.json`. The project-level `.agents/mcp.json` and `.freebuff/mcp-server.json` (kept as reference) are **inert** — wrong location.
+- **Setup done:** real config written to `%USERPROFILE%\.agents\mcp.json` (server key `computer-control`, stdio via uvx, env as above).
+- **Remaining step (app consent flow, by design):** after restarting Freebuff Desktop, the app shows the new connector as `awaiting_launch_approval` → approve the launch (it will display the uvx command) → it discovers the 15 tools → approve the tool manifest → server goes `enabled`. Only then do the tools appear in the agent's toolset. This mirrors how the app gates arbitrary command execution — do not hand-edit `~/.freebuff/mcp.json` to skip it.
+- **Manual probe (no client needed):** pipe `initialize` → `notifications/initialized` → `tools/list` (or `tools/call`) JSON-RPC over stdio into `uvx computer-control-mcp@latest` with `COMPUTER_CONTROL_MCP_SCREENSHOT_DIR` set. Verified working: server `ComputerControlMCP` v1.13.0, 15 tools, `take_screenshot` returns a live inline PNG (the shots dir stays empty by design).
+
+- **Computer-control MCP attached and proven (2026-09-09 17:27):** with the config in `~/.agents/mcp.json` and the connector approved in Freebuff's UI, the agent's toolset gains the 15 tools and can drive the whole playtest itself: launch `run-driver.cmd`, `activate_window "OpenRune Server"`, OCR the login screen, click Existing User → password → Login, and verify via `Login accepted` in the server log + OCR of the in-world chatbox. **Gotchas learned:** (1) OCR works regardless of z-order but clicks need the game window foreground — `activate_window` immediately before every click; (2) RuneLite prefills the username, and Ctrl+A doesn't select-all in the OSRS login fields — don't touch the username field, just type into the empty password field; (3) on the error screen, clicking "Try again" (window-scoped coords) returns to the welcome screen; (4) window-scoped OCR takes ~20s per call and can time out — retry.
+
 **Automated login (headless testing):**
 `.freebuff/driver/` contains a working playtest rig (agent tooling — not needed to play):
 - `Driver.java` launches a second RSProx session programmatically (`ProxyService.start → allocatePort()+5 → initializeHttpServer → launchRuneLiteClient`) so it never collides with a GUI session (worldlist port is hardcoded `43600 + sessionId`), and reports login events from the proxy's `SessionMonitor`.
 - `Typer7.java` walks the login UI: it makes the client window topmost (synthetic clicks otherwise get swallowed by overlapping windows), clicks the welcome/login button (fixed offset ~x395,y408 in an 820×542 window), then clicks the password row and types the password with Enter.
 - **The gotcha that cost a session:** RuneLite remembers the last username in the active profile (`%USERPROFILE%\.rlcustom\profiles2\default-*.properties`, key `loginscreen.username`) and pre-fills the login box, overriding the vanilla `jagexcache/.../preferences.dat` username. For a test account, patch that key to the test name (same length avoids layout churn) *before* launching.
 - **Success oracle:** the RSProx log shows `Game login received, re-encrypting RSA` then *either* `Login failed with response code: <X>` or **nothing** (accepted). `SessionMonitor.onLogin` + `onNameUpdate <name>` in the driver log = player entered the world. The game server log now also records world entry: `Login accepted user='<name>' characterId=<id> world=<world> slot=<slot>` (with `(new account)` on first-ever login).
+- **Verified full cycle (2026-09-09):** run `.freebuff/driver/run-driver.cmd` detached, wait until `Client initialization took` appears in `driver.log` (~30s), then run Typer7 with JNA on the classpath (plain `-cp .` fails with `NoClassDefFoundError: com/sun/jna/Library`):
+  ```bat
+  cd .freebuff\driver
+  set "REP=%USERPROFILE%\.rsprox\launcher\repository"
+  java -cp ".;%REP%\jna-5.13.0.jar;%REP%\jnagmp-3.0.0.jar" Typer7 "OpenRune Server" "<your-gui-title-suffix>" <password-from-run-driver.cmd>
+  ```
+  Pass the exclude filter as a string unique to your own logged-in GUI window (its title suffix), so Typer7 never grabs it. Confirmed: `Login accepted user='<test user>' ... slot=N` → clean `Logout completed` ~100s later.

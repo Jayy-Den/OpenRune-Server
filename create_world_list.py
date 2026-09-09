@@ -27,7 +27,7 @@ payload += b'\x01\x00\x00'  # trailer
 length = len(payload)
 packet = struct.pack('>I', length) + payload
 
-with open('C:\Users\yourname/Documents/OpenRune-Server/.data/world_list.ws', 'wb') as f:
+with open('.data/world_list.ws', 'wb') as f:
     f.write(packet)
 
 print(f'Written {len(packet)} bytes (payload={length})')
