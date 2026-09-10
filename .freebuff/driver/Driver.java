@@ -77,7 +77,7 @@ public class Driver {
             Thread.sleep(5_000);
             System.out.println(loggedIn ? "LOGIN-CONFIRMED-BY-PROXY" : "== Driver: no login yet ==");
             if (loggedIn) {
-                Thread.sleep(90_000); // stay alive so the world render can be captured
+                Thread.sleep(4 * 60 * 60_000); // stay alive so the agent can drive in-world QA with MCP hands
                 System.out.println("== Driver: done, exiting ==");
                 System.exit(0);
             }
