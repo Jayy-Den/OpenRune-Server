@@ -23,6 +23,8 @@ import org.rsmod.api.invtx.invClear
 import org.rsmod.api.mechanics.toxins.impl.PlayerDisease
 import org.rsmod.api.mechanics.toxins.impl.PlayerPoison
 import org.rsmod.api.mechanics.toxins.impl.PlayerVenom
+import org.rsmod.api.player.interact.HeldInteractions
+import org.rsmod.api.player.worn.HeldEquipResult
 import org.rsmod.api.player.cheat.adminGodMode
 import org.rsmod.api.player.cheat.adminMaxHit
 import org.rsmod.api.player.debug.componentClickDebug
@@ -57,6 +59,7 @@ import org.rsmod.game.loc.LocEntity
 import org.rsmod.game.loc.LocInfo
 import org.rsmod.game.loc.LocShape
 import org.rsmod.game.stat.PlayerSkillXPTable
+import org.rsmod.game.type.getInvObj
 import org.rsmod.map.CoordGrid
 import org.rsmod.map.square.MapSquareGrid
 import org.rsmod.map.square.MapSquareKey
@@ -80,6 +83,7 @@ constructor(
     private val regions: RegionRegistry,
     private val deathKillHooks: Set<NpcDeathKillHook>,
     private val instanceRegistry: BossInstanceRegistry,
+    private val heldInteractions: HeldInteractions,
 ) : PluginScript() {
     private val logger = InlineLogger()
 
@@ -132,6 +136,10 @@ constructor(
 
         onCommand("invadd", "Spawn obj into inv", ::invAdd)
         onCommand("item", "Spawn obj into inv (ex: ::item 995 100 or ::item coins 100)", ::invAdd)
+
+        onCommand("wear", "Equip an obj from inv by name/id (ex: ::wear 772 or ::wear dramen_staff)", ::wear) {
+            invalidArgs = "Use as ::wear objDebugNameOrId (ex: ::wear dramen_staff or ::wear 772)"
+        }
 
         onCommand("invclear", "Remove all objs from inv", ::invClear)
         onCommand("varp", "Set varp value", ::setVarp) {
@@ -527,6 +535,45 @@ constructor(
         }
 
     private fun invClear(cheat: Cheat) = with(cheat) { player.invClear(player.inv) }
+
+    /**
+     * Equips the first matching obj in the player's inventory through the full equip flow
+     * (`HeldInteractions.equip`), identical to a real inventory Op2: restrictions, stat
+     * requirements, wearpos swaps, equip/unequip events and an appearance rebuild all apply.
+     *
+     * Accepts a debug name (`::wear dramen_staff`) or a raw cache id (`::wear 772`). Intended for
+     * QA/testing so agent-driven playtests can equip without inventory pixel-hunting.
+     */
+    private fun wear(cheat: Cheat) {
+        with(cheat) {
+            val typeName = args.asTypeName()
+            val type = resolveObj(typeName)
+            if (type == null) {
+                player.mes("There is no obj mapped to: '$typeName'")
+                return
+            }
+
+            protectedAccess.launch(player) {
+                val inv = player.inv
+                val invSlot = inv.indexOfFirst { it != null && getInvObj(it).id == type.id }
+                if (invSlot < 0) {
+                    player.mes("You don't have a '$typeName' in your inventory.")
+                    return@launch
+                }
+
+                when (val result = heldInteractions.equip(this, inv, invSlot)) {
+                    is HeldEquipResult.Success -> {
+                        val wornType = result.equipWearpos
+                        player.mes("Equipped `$typeName` (slot: ${wornType.name.lowercase()}).")
+                    }
+                    is HeldEquipResult.Fail -> {
+                        val messages = result.messages.ifEmpty { listOf("You can't equip that.") }
+                        messages.forEach(player::mes)
+                    }
+                }
+            }
+        }
+    }
 
     private fun setVarp(cheat: Cheat) =
         with(cheat) {
