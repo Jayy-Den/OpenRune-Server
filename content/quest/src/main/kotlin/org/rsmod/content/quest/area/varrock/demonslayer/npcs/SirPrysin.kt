@@ -5,7 +5,6 @@ import dev.openrune.rscm.RSCM.asRSCM
 import dev.openrune.rscm.RSCMType
 import jakarta.inject.Inject
 import org.rsmod.api.player.dialogue.Dialogue
-import org.rsmod.api.player.protect.ProtectedAccess
 import org.rsmod.api.repo.obj.ObjRepository
 import org.rsmod.api.script.onOpNpc1
 import org.rsmod.content.quest.area.varrock.demonslayer.DemonSlayerQuest

@@ -4,9 +4,9 @@ import dev.openrune.types.ItemServerType
 import jakarta.inject.Inject
 import org.rsmod.api.area.checker.AreaChecker
 import org.rsmod.api.area.checker.isInWilderness
-import org.rsmod.api.player.output.UpdateRun
 import org.rsmod.api.player.hook.PlayerRestrictions
 import org.rsmod.api.player.hook.RestrictedAction
+import org.rsmod.api.player.output.UpdateRun
 import org.rsmod.api.player.protect.ProtectedAccess
 import org.rsmod.api.player.stat.baseHitpointsLvl
 import org.rsmod.api.player.stat.hitpoints

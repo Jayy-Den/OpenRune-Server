@@ -3,6 +3,7 @@ package org.rsmod.content.other.emirsarena.duel
 import dev.openrune.ServerCacheManager
 import dev.openrune.definition.type.widget.IfEvent
 import dev.openrune.rscm.RSCM
+import dev.openrune.rscm.RSCM.asRSCM
 import dev.openrune.rscm.RSCMType
 import dev.openrune.types.aconverted.interf.IfButtonOp
 import jakarta.inject.Inject
@@ -12,7 +13,6 @@ import org.rsmod.api.invtx.invTransfer
 import org.rsmod.api.player.output.UpdateInventory
 import org.rsmod.api.player.output.mes
 import org.rsmod.api.player.protect.ProtectedAccess
-import dev.openrune.rscm.RSCM.asRSCM
 import org.rsmod.api.player.ui.ifCloseSub
 import org.rsmod.api.player.ui.ifOpenMainModal
 import org.rsmod.api.player.ui.ifOpenMainSidePair

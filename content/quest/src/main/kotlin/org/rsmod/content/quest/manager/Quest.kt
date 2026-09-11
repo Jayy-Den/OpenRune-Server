@@ -20,15 +20,15 @@ data class ItemRewardDisplay(val item: String, val zoom: Int = 10)
 data class Quest(
     val id: Int,
     val key: String,
-    val rowID : Int,
+    val rowID: Int,
     val displayName: String,
     val mapElement: Int?,
     val startCoord: CoordGrid?,
     val maxSteps: Int,
     val questPoints: Int,
     val questVarp: String,
-    val rewards : QuestReward,
-    val itemDisplay : ItemRewardDisplay,
+    val rewards: QuestReward,
+    val itemDisplay: ItemRewardDisplay,
     /** Js5 archive 11 group played when the quest is completed; see [QuestScript.completionJingle]. */
     val completionJingle: Int = DEFAULT_COMPLETION_JINGLE,
 ) {
@@ -69,8 +69,8 @@ data class Quest(
         fun register(
             rowKey: String,
             varp: String,
-            itemDisplay : ItemRewardDisplay,
-            rewards : QuestReward,
+            itemDisplay: ItemRewardDisplay,
+            rewards: QuestReward,
             completionJingle: Int = DEFAULT_COMPLETION_JINGLE,
         ): Quest {
 
@@ -219,13 +219,13 @@ data class Quest(
             val stat = ServerCacheManager.getStats(skill.asRSCM(RSCMType.STAT))
                 ?: error("No stat found for $skill")
 
-            access.statAdvance(skill,amount)
+            access.statAdvance(skill, amount)
             rewardLines.add("${amount.toInt()} ${stat.displayName} XP")
         }
 
         rewards.items.forEach { (item, amount) ->
-            access.invAdd(access.inv,item,amount)
-            val type = ServerCacheManager.getItem(item.asRSCM(RSCMType.OBJ))?: error("No item found for $item")
+            access.invAdd(access.inv, item, amount)
+            val type = ServerCacheManager.getItem(item.asRSCM(RSCMType.OBJ)) ?: error("No item found for $item")
             rewardLines.add("$amount x ${type.name}")
         }
 
@@ -240,7 +240,5 @@ data class Quest(
             val text = linesToShow.getOrNull(i) ?: ""
             access.ifSetText(componentId, text)
         }
-
     }
-
 }

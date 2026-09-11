@@ -17,7 +17,6 @@ import org.rsmod.api.shops.Shops
 import org.rsmod.api.shops.operation.ShopOperationMap
 import org.rsmod.content.interfaces.bank.openBank
 import org.rsmod.content.other.emirsarena.duel.DuelManager
-import org.rsmod.content.other.emirsarena.ranked.ArenaRanking
 import org.rsmod.events.EventBus
 import org.rsmod.game.entity.Npc
 import org.rsmod.game.entity.Player

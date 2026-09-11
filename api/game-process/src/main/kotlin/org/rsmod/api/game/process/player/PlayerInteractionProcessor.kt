@@ -31,8 +31,8 @@ import org.rsmod.game.interact.InteractionNpc
 import org.rsmod.game.interact.InteractionNpcOp
 import org.rsmod.game.interact.InteractionNpcT
 import org.rsmod.game.interact.InteractionObj
-import org.rsmod.game.interact.InteractionPlayer
 import org.rsmod.game.interact.InteractionOp
+import org.rsmod.game.interact.InteractionPlayer
 import org.rsmod.game.interact.InteractionPlayerOp
 import org.rsmod.game.interact.InteractionPlayerT
 import org.rsmod.game.movement.RouteRequestPathingEntity

@@ -246,6 +246,7 @@ constructor(
         const val DISAPPEAR_SEQ = "seq.qip_ds_wardrobe_disappear"
         const val REACH_SEQ = "seq.human_pickuptable"
         const val SOUND_RADIUS = 10
+
         /** Measured in game: rotation 1 puts the doors on the west side of the model. */
         val FRONT_FACES_WEST = LocAngle.North
     }

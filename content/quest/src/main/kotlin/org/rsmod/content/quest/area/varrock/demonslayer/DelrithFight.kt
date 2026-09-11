@@ -14,7 +14,6 @@ import org.rsmod.api.music.MusicRepository
 import org.rsmod.api.npc.access.StandardNpcAccess
 import org.rsmod.api.npc.interact.AiPlayerInteractions
 import org.rsmod.api.npc.opPlayer2
-import org.rsmod.api.player.hook.TeleportType
 import org.rsmod.api.player.music.MusicPlayMode
 import org.rsmod.api.player.music.MusicPlayer
 import org.rsmod.api.player.output.mes

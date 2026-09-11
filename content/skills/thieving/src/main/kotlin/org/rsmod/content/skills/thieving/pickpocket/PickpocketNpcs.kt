@@ -532,7 +532,6 @@ object PickpocketNpcs {
             PickpocketNpc("npc.tzhaar_hur_city5", 3),
             PickpocketNpc("npc.tzhaar_hur_city6", 3),
         )
-
 }
 
 data class PickpocketNpc(val npc: String, val op: Int)

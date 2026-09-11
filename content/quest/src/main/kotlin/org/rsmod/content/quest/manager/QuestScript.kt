@@ -70,10 +70,9 @@ class QuestRewardBuilder {
     fun build(): QuestReward = QuestReward(_xp, _items, _extraText)
 }
 
-
 abstract class QuestScript(
     val questKey: String,
-    val questVarp : String,
+    val questVarp: String,
     val rewards: QuestReward,
     val completedQuestItemDisplay: ItemRewardDisplay,
     /**
@@ -94,7 +93,6 @@ abstract class QuestScript(
     abstract fun completedLog(player: ProtectedAccess): String
 
     abstract fun ScriptContext.init()
-
 
     override fun ScriptContext.startup() {
         RSCM.requireRSCM(RSCMType.DBROW, "dbrow.${questKey}")
@@ -125,4 +123,3 @@ abstract class QuestScript(
         builder: QuestJournalBuilder.() -> Unit
     ): String = buildCompletionJournal(player, quest, builder)
 }
-

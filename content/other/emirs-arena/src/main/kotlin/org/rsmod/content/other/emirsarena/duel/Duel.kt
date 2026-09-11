@@ -5,12 +5,16 @@ import org.rsmod.game.entity.Player
 enum class DuelStage {
     /** Both players are picking rules on the duel options screen. */
     Options,
+
     /** Both players are offering items on the stake screen (legacy duels only). */
     Stakes,
+
     /** Both players are checking the stake summary. */
     StakeConfirm,
+
     /** Both players are looking at the confirmation screen. */
     Confirm,
+
     /** The players stand in the arena while the "3, 2, 1, FIGHT!" countdown runs. */
     Countdown,
     Fighting,

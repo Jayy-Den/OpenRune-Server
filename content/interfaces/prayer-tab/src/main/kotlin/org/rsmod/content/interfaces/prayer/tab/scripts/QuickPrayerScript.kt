@@ -5,10 +5,10 @@ import dev.openrune.types.aconverted.interf.IfButtonOp
 import dev.openrune.types.aconverted.interf.IfSubType
 import jakarta.inject.Inject
 import org.rsmod.api.config.constants
-import org.rsmod.api.player.output.mes
-import org.rsmod.api.player.protect.ProtectedAccess
 import org.rsmod.api.player.hook.PlayerRestrictions
 import org.rsmod.api.player.hook.RestrictedAction
+import org.rsmod.api.player.output.mes
+import org.rsmod.api.player.protect.ProtectedAccess
 import org.rsmod.api.player.protect.ProtectedAccessLauncher
 import org.rsmod.api.player.stat.prayerLvl
 import org.rsmod.api.player.ui.ifClose

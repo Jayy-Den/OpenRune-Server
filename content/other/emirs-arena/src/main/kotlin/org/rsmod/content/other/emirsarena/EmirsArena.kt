@@ -32,6 +32,7 @@ object EmirsArena {
     const val STAKE_PREFIX: String = "component.trademain:"
     const val STAKE_SIDE_ITEMS: String = "component.partydrop_side:items"
     const val STAKE_CONFIRM_PREFIX: String = "component.tradeconfirm:"
+
     /** Persisted holding inventory for stakes; survives crashes and restarts mid-duel. */
     const val STAKE_INV: String = "inv.emirs_arena_stake"
 

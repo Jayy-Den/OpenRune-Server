@@ -2,7 +2,6 @@ package org.rsmod.content.quest.area.varrock.gertrudescat.npcs
 
 import jakarta.inject.Inject
 import org.rsmod.api.player.dialogue.Dialogue
-import org.rsmod.api.player.protect.ProtectedAccess
 import org.rsmod.api.script.onOpNpc1
 import org.rsmod.api.script.onOpNpc3
 import org.rsmod.content.quest.area.varrock.gertrudescat.GertrudesCatQuest

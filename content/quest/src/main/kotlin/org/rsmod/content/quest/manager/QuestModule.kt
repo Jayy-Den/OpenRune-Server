@@ -26,4 +26,3 @@ public class QuestModule : PluginModule() {
         addSetBinding<NpcAttackValidateHook>(SilverlightAttackHook::class.java)
     }
 }
-

@@ -23,7 +23,7 @@ public object MapAreaEncoder {
 
             val group = (key.x shl 8) or (key.z and 0xFF)
             val newBuf = buffer.clear().apply { encode(area, this) }
-            cache.write(archive, group,7, newBuf.toReadableByteArray())
+            cache.write(archive, group, 7, newBuf.toReadableByteArray())
         }
         buffer.release()
     }
