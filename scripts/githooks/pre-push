@@ -1,0 +1,190 @@
+#!/bin/sh
+#
+# pre-push privacy scan for the OpenRune-Server fork.
+#
+# Blocks `git push` when outgoing commits look like they leak private data:
+#   * Windows/Unix home paths (C:\Users\..., /Users/..., /home/...)
+#   * email addresses that are not GitHub "noreply" addresses
+#   * password/secret-shaped assignments
+#   * private-network IP addresses (10.x, 192.168.x, 172.16-31.x, loopback, ::1)
+#
+# Scans BOTH:
+#   * metadata: author/committer name+email of every outgoing commit
+#   * content : commit messages + full diff text (added and removed lines)
+#
+# Scope = commits about to be pushed (remote baseline..local), so
+# already-public history is never rescanned and never blocks you again.
+#
+# The hook's own source is excluded from the content scan: it necessarily
+# contains the very patterns we search for. It is versioned and reviewable,
+# and its metadata (author email) is still scanned.
+#
+# Escape hatch: append the exact marker below to a flagged line (code line
+# or commit-message line); lines carrying it are exempt from the scan:
+#     privacy-scan:allow
+#
+# Setup (already wired via `git config core.hooksPath scripts/githooks`):
+#   scripts/githooks/pre-push   <- this file
+#
+# To bypass in a one-off emergency:  git push --no-verify
+
+# Do not fail on unusual filenames or diff content. IFS is set to a single
+# newline character (a quoted literal newline - the POSIX-safe way).
+IFS='
+'
+
+remote="$1"
+
+# Baseline = what the remote already has. Try, in order: the refspec arg
+# (`git push origin main` passes the remote ref), the remote's HEAD branch,
+# then known tracking refs. Last resort is the empty tree, i.e. treat
+# everything as outgoing (safety over convenience).
+if [ -n "$2" ]; then
+    base="$(git rev-parse --verify --quiet "$2" 2>/dev/null)"
+fi
+if [ -z "$base" ]; then
+    base="$(git rev-parse --verify --quiet "refs/remotes/${remote}/HEAD" 2>/dev/null | head -1)"
+fi
+if [ -z "$base" ]; then
+    case "$remote" in
+        upstream) base="$(git rev-parse --verify --quiet refs/remotes/upstream/main)" ;;
+        *) base="$(git rev-parse --verify --quiet refs/remotes/origin/main)" ;;
+    esac
+fi
+if [ -z "$base" ]; then
+    base="$(git hash-object -t tree /dev/null)"
+fi
+
+local_sha="$(git rev-parse HEAD)"
+
+# Nothing to scan.
+if [ "$base" = "$local_sha" ]; then
+    exit 0
+fi
+
+ALLOW_MARKER="privacy-scan:allow"
+
+scan_output="$(
+    git log \
+        --format='@@@META@@@%n%an <%ae>%n%cn <%ce>%n@@@REST@@@%n%B' \
+        --patch --unified=0 --no-color --no-ext-diff \
+        "$base..$local_sha" \
+        -- . ':(exclude)scripts/githooks/*'
+)"
+[ -z "$scan_output" ] && exit 0
+
+# Allow marker: any line that carries it is exempt from every rule below.
+# (-vF: fixed-string match, invert; never combine with -E, they conflict.)
+scan_output="$(printf '%s\n' "$scan_output" | grep -vF "$ALLOW_MARKER")"
+[ -z "$scan_output" ] && exit 0
+
+# report <kind> <match> <hint>
+report() {
+    printf >&2 '\n'
+    printf >&2 '  PRIVATE-DATA HIT [%s]: %s\n' "$1" "$2"
+    printf >&2 '    hint: %s\n' "$3"
+}
+
+hits=0
+
+# ---------------------------------------------------------------- metadata --
+# Flag personal (non-noreply) emails used as author/committer identity.
+# Allowed: anything containing "noreply" (e.g. 123456+User@users.noreply.github.com)
+meta_emails="$(
+    printf '%s\n' "$scan_output" |
+        awk '/^@@@META@@@$/{m=1; next} /^@@@REST@@@$/{m=0} m && /</ {print}'
+)"
+if [ -n "$meta_emails" ]; then
+    if printf '%s\n' "$meta_emails" | grep -Eivq 'noreply'; then
+        hits=1
+        printf '%s\n' "$meta_emails" | grep -Eiv 'noreply' | sort -u | while IFS= read -r bad; do
+            [ -n "$bad" ] || continue
+            report "identity" "$bad" \
+                'personal email in commit metadata. Set: git config user.email "123456+You@users.noreply.github.com"'
+        done
+    fi
+fi
+
+# ----------------------------------------------------------------- content --
+# Everything that is not commit metadata: message bodies and diffs.
+content="$(
+    printf '%s\n' "$scan_output" |
+        awk '/^@@@META@@@$/{skip=1; next} /^@@@REST@@@$/{skip=0; next} !skip'
+)"
+
+# 1) Home directories / user paths (Windows + Unix).
+path_hits="$(
+    printf '%s\n' "$content" |
+        grep -Ein 'C:\\+Users\\+[^"'"'"' ]+|C:/Users/[^"'"'"' ]+|/Users/[A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+'
+)"
+if [ -n "$path_hits" ]; then
+    hits=1
+    total="$(printf '%s\n' "$path_hits" | wc -l)"
+    printf '%s\n' "$path_hits" | head -10 | while IFS= read -r h; do
+        report "local-path" "$(printf '%s' "$h" | cut -c1-160)" 'looks like a private home-directory path'
+    done
+    if [ "$total" -gt 10 ]; then
+        printf >&2 '  ... and %s more path hits\n' "$((total - 10))"
+    fi
+fi
+
+# 2) Password / secret assignments (excluding example/template placeholders).
+secret_hits="$(
+    printf '%s\n' "$content" |
+        grep -Ein \
+            '(password|passwd|secret|api[-_]?key|apikey|access[-_]?token|auth[-_]?token|client[-_]?secret|private[-_]?key)[[:space:]]*[:=][[:space:]]*["'"'"']?[A-Za-z0-9+/_-]{6,}' |
+        grep -Eiv 'example|placeholder|sample|changeme|change-me|\$\{|%[A-Za-z]|<[^>]*>|\b[xX]{4,}\b|dummy|your[-_]|redacted|process\.getenv|System\.getenv|@Value|config\.(get|property)|getProperty\(|:[[:space:]]*(String|ByteArray|CharArray|Boolean|Int|Long|Char|Any)\b|[:=][[:space:]]*[A-Za-z_][A-Za-z0-9_]*\(|[:=][[:space:]]*[A-Za-z0-9_-]+\.[A-Za-z_]+'
+)"
+if [ -n "$secret_hits" ]; then
+    hits=1
+    total="$(printf '%s\n' "$secret_hits" | wc -l)"
+    printf '%s\n' "$secret_hits" | head -10 | while IFS= read -r h; do
+        report "secret" "$(printf '%s' "$h" | cut -c1-160)" 'password/secret-shaped assignment; keep real values in game.yml (git-ignored) or env vars'
+    done
+    if [ "$total" -gt 10 ]; then
+        printf >&2 '  ... and %s more secret-shaped hits\n' "$((total - 10))"
+    fi
+fi
+
+# 3) Private-network IP addresses (IPv4 + link-local IPv6). Loopback
+#    (127.0.0.1, ::1) and 0.0.0.0 are universal and excluded.
+ip_hits="$(
+    printf '%s\n' "$content" |
+        grep -Eon '\b(10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|192\.168\.[0-9]{1,3}\.[0-9]{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]{1,3}\.[0-9]{1,3}|127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|fe80:[0-9a-fA-F:]+)\b' |
+        grep -Eiv '127\.0\.0\.1$|0\.0\.0\.0|255\.|example|localhost|sample'
+)"
+if [ -n "$ip_hits" ]; then
+    hits=1
+    printf '%s\n' "$ip_hits" | cut -d: -f2- | sort -u | head -10 | while IFS= read -r ip; do
+        [ -n "$ip" ] || continue
+        report "private-ip" "$ip" 'private-network IP; use documentation addresses instead'
+    done
+fi
+
+# 4) Bare email addresses (metadata, messages, and diff content) that are
+#    not noreply addresses and not code annotations.
+email_hits="$(
+    printf '%s\n' "$content" |
+        grep -Eo '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}' |
+        grep -Eiv 'noreply|example\.|@types|user@|you@|your@|name@|email@|admin@|test@|foo@|bar@|baz@|someone@|somewhere\.' |
+        sort -u | head -10
+)"
+if [ -n "$email_hits" ]; then
+    hits=1
+    printf '%s\n' "$email_hits" | while IFS= read -r mail; do
+        [ -n "$mail" ] || continue
+        report "email-in-content" "$mail" 'personal email in code/docs/messages; use a noreply address or example.com'
+    done
+fi
+
+# ------------------------------------------------------------------ result --
+if [ "$hits" -ne 0 ]; then
+    printf >&2 '\n'
+    printf >&2 '  PUSH BLOCKED by privacy pre-push hook.\n'
+    printf >&2 '  To publish a flagged line anyway, append the marker "%s" to it,\n' "$ALLOW_MARKER"
+    printf >&2 '  amend the commit, and push again; or bypass once with: git push --no-verify\n'
+    printf >&2 '\n'
+    exit 1
+fi
+
+exit 0
