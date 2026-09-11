@@ -59,4 +59,5 @@ public data class ServerConfig(
     val central: OpenRuneCentralGameConfig? = null,
     @JsonProperty("login-timing-logs") val loginTimingLogs: Boolean = false,
     @JsonProperty("social-pm-trace-logs") val socialPmTraceLogs: Boolean = false,
+    @JsonProperty("ifopen-persist-enabled") val ifopenPersistEnabled: Boolean = false,
 )

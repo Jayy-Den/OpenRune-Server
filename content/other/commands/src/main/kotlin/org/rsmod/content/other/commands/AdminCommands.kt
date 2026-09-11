@@ -23,12 +23,11 @@ import org.rsmod.api.invtx.invClear
 import org.rsmod.api.mechanics.toxins.impl.PlayerDisease
 import org.rsmod.api.mechanics.toxins.impl.PlayerPoison
 import org.rsmod.api.mechanics.toxins.impl.PlayerVenom
-import org.rsmod.api.player.interact.HeldInteractions
-import org.rsmod.api.player.worn.HeldEquipResult
 import org.rsmod.api.player.cheat.adminGodMode
 import org.rsmod.api.player.cheat.adminMaxHit
 import org.rsmod.api.player.debug.componentClickDebug
 import org.rsmod.api.player.hook.TeleportType
+import org.rsmod.api.player.interact.HeldInteractions
 import org.rsmod.api.player.ironman.PlayerGamemode
 import org.rsmod.api.player.ironman.setGamemode
 import org.rsmod.api.player.output.MiscOutput
@@ -44,9 +43,11 @@ import org.rsmod.api.player.ui.PlayerInterfaceUpdates
 import org.rsmod.api.player.vars.VarPlayerIntMapSetter
 import org.rsmod.api.player.vars.boolVarBit
 import org.rsmod.api.player.vars.resyncVar
+import org.rsmod.api.player.worn.HeldEquipResult
 import org.rsmod.api.registry.region.RegionRegistry
 import org.rsmod.api.repo.loc.LocRepository
 import org.rsmod.api.repo.npc.NpcRepository
+import org.rsmod.api.server.config.ServerConfig
 import org.rsmod.api.utils.format.formatAmount
 import org.rsmod.api.utils.system.SafeServiceExit
 import org.rsmod.game.GameUpdate
@@ -75,6 +76,7 @@ class AdminCommands
 @Inject
 constructor(
     private val protectedAccess: ProtectedAccessLauncher,
+    private val serverConfig: ServerConfig,
     private val playerList: PlayerList,
     private val locRepo: LocRepository,
     private val npcRepo: NpcRepository,
@@ -194,6 +196,9 @@ constructor(
         }
         onCommand("ifopen", "Open an interface by id or RSCM name", ::openInterface) {
             invalidArgs = "Use as ::ifopen idOrName (ex: ::ifopen 219 or ::ifopen bankmain)"
+        }
+        onCommand("ifopenpersist", "Open a modal that will not be auto-closed by the server", ::openInterfacePersistent) {
+            invalidArgs = "Use as ::ifopenpersist idOrName (ex: ::ifopenpersist 219 or ::ifopenpersist bankmain)"
         }
         onCommand(
             "testloot",
@@ -793,6 +798,56 @@ constructor(
             }
             protectedAccess.launch(player) { ifOpenMain(interfName) }
             player.mes("Opened interface: '$interfName' (id=$typeId)")
+        }
+
+    @OptIn(InternalApi::class)
+    private fun openInterfacePersistent(cheat: Cheat) =
+        with(cheat) {
+            if (args.isEmpty()) {
+                player.mes(
+                    "Use as ::ifopenpersist idOrName (ex: ::ifopenpersist 219 or ::ifopenpersist bankmain)"
+                )
+                return
+            }
+
+            // Reuse the same resolution logic as ::ifopen so both commands accept ids and RSCM names.
+            val first = args[0]
+            val interfName =
+                if (first.toIntOrNull() != null) {
+                    val id = first.toInt()
+                    if (ServerCacheManager.getInterface(id) == null) {
+                        player.mes("No interface exists with id: $id")
+                        return
+                    }
+                    val resolved = RSCM.getReverseMapping(RSCMType.INTERFACE, id)
+                    if (resolved.isEmpty()) {
+                        player.mes("No RSCM name mapped to interface id: $id")
+                        return
+                    }
+                    resolved
+                } else {
+                    "interface.${args.asTypeName()}"
+                }
+            val typeId = interfName.asRSCM()
+            if (typeId == -1 || ServerCacheManager.getInterface(typeId) == null) {
+                player.mes("That interface does not exist: '$interfName'")
+                return
+            }
+
+            // The auto-close cycle matches on the raw interface id stored in `ui.modals`, so the
+            // persistent id is simply the resolved interface id.
+            val persistentId = typeId
+
+            // This command is mostly useful for agent-driven UI tests, so gate it behind the same
+            // server config toggle that admits the behavior. If the toggle is off, the command still
+            // validates the interface and errors clearly rather than silently doing nothing.
+            if (!serverConfig.ifopenPersistEnabled) {
+                player.mes("::ifopenpersist is disabled: set `ifopen-persist-enabled: true` in game.yml")
+                return
+            }
+
+            protectedAccess.launch(player) { ifOpenMainPersistent(interfName, persistentId) }
+            player.mes("Opened persistent interface: '$interfName' (id=$typeId, persistentId=$persistentId)")
         }
 
     private fun resolveArgTypeId(arg: String, names: Map<String, Int>): Int? {

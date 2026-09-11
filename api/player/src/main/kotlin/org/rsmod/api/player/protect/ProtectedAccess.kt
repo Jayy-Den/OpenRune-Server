@@ -117,6 +117,7 @@ import org.rsmod.api.player.ui.ifObjbox
 import org.rsmod.api.player.ui.ifOpenFullOverlay
 import org.rsmod.api.player.ui.ifOpenMain
 import org.rsmod.api.player.ui.ifOpenMainModal
+import org.rsmod.api.player.ui.ifOpenMainPersistent
 import org.rsmod.api.player.ui.ifOpenMainSidePair
 import org.rsmod.api.player.ui.ifOpenOverlay
 import org.rsmod.api.player.ui.ifOpenSide
@@ -3289,6 +3290,15 @@ public class ProtectedAccess(
      */
     public fun ifOpenMainModal(interf: String, colour: Int = -1, transparency: Int = -1) {
         player.ifOpenMainModal(interf, context.eventBus, colour, transparency)
+    }
+
+    /** Opens a main modal and marks it persistent: the server will not auto-close it in the
+     * normal modal-auto-close cycle. Intended for the admin [::ifopenpersist] command so
+     * agent-driven UI tests can inspect a modal without racing the client-side 30-60s lifetime. */
+    @OptIn(InternalApi::class)
+    @InternalApi("Exposed so the admin [::ifopenpersist] command can mark modals persistent.")
+    public fun ifOpenMainPersistent(interf: String, persistentId: Int) {
+        player.ifOpenMainPersistent(interf, context.eventBus, persistentId)
     }
 
     public fun ifOpenOverlay(interf: String, target: String) {

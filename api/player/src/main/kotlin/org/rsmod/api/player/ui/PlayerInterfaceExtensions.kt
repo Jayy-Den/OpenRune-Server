@@ -6,8 +6,6 @@ import dev.openrune.definition.type.widget.ComponentType
 import dev.openrune.definition.type.widget.IfEvent
 import dev.openrune.rscm.RSCM.asRSCM
 import dev.openrune.rscm.RSCMType
-import dev.openrune.types.ItemServerType
-import dev.openrune.types.NpcServerType
 import dev.openrune.types.SequenceServerType
 import dev.openrune.types.aconverted.interf.IfSubType
 import java.awt.Color
@@ -111,6 +109,15 @@ public fun Player.ifOpenMain(interf: String, eventBus: EventBus) {
     openModal(interf, "component.toplevel_osrs_stretch:mainmodal", eventBus)
 }
 
+/** Opens a main modal and marks it persistent: the server will not auto-close it in
+ * [processIfCloseModal]. Used by the admin [::ifopenpersist] command so agent-driven UI tests
+ * can inspect a modal without racing the client-side 30-60s lifetime. */
+@OptIn(InternalApi::class)
+public fun Player.ifOpenMainPersistent(interf: String, eventBus: EventBus, persistentId: Int) {
+    openModal(interf, "component.toplevel_osrs_stretch:mainmodal", eventBus)
+    ui.modalIdsPersistent.add(persistentId)
+}
+
 public fun Player.ifOpenMainSidePair(
     main: String,
     side: String,
@@ -144,7 +151,7 @@ public fun Player.ifOpenFullOverlay(interf: String, eventBus: EventBus) {
 public fun Player.ifClose(eventBus: EventBus) {
     cancelActiveDialog()
     weakQueueList.clear()
-    ifCloseModals(eventBus)
+    ifCloseNonPersistentModals(eventBus)
 }
 
 /**
@@ -213,6 +220,22 @@ public fun Player.ifCloseModals(eventBus: EventBus) {
     // the player to disconnect than to allow them to keep modals open when they shouldn't.
     check(ui.modals.isEmpty()) {
         "Could not close all modals for player `$this`. (modals=${ui.modals})"
+    }
+}
+
+/** Closes every non-persistent modal on the player. Persistent modals (opened via
+ * [ifOpenMainPersistent]) are left open. */
+@OptIn(InternalApi::class)
+public fun Player.ifCloseNonPersistentModals(eventBus: EventBus) {
+    val persistent = ui.modalIdsPersistent
+    val modalEntries = ui.modals.entries()
+    for ((key, value) in modalEntries) {
+        val idInterface = UserInterface(value)
+        if (idInterface.id in persistent) {
+            continue
+        }
+        val target = Component(key)
+        closeModal(idInterface, target, eventBus)
     }
 }
 
@@ -345,10 +368,13 @@ private fun Player.closeModal(interf: String, eventBus: EventBus) {
     }
 }
 
+@OptIn(InternalApi::class)
 private fun Player.closeModal(interf: UserInterface, target: Component, eventBus: EventBus) {
     ui.modals.remove(target)
     ui.events.clear(interf)
-
+    // If the modal was opened through the persistent-ifopen path, drop its id so the set does not
+    // keep stale entries after the modal is closed through any other path.
+    ui.modalIdsPersistent.remove(interf.id)
     // Translate any gameframe target component when sent to the client. As far as the server
     // is aware, the interface was open on the "base" target component. (when applicable)
     val translated = ui.translate(target)

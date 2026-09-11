@@ -22,6 +22,11 @@ central:
     pool-size: 10
 
 
+# Admin QA helpers. When enabled, ::ifopenpersist opens modals that the server will not
+    # auto-close, which is useful for agent-driven UI tests that need to OCR/inspect a modal
+    # without racing the client-side 30-60s modal lifetime.
+    #ifopen-persist-enabled: false
+
 # Central server connection settings (used when connecting to a different instance)
     #central:
     #same-instance: false

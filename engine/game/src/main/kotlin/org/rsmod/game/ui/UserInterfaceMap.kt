@@ -8,6 +8,7 @@ import dev.openrune.rscm.RSCM.asRSCM
 import dev.openrune.rscm.RSCMType
 import it.unimi.dsi.fastutil.ints.Int2IntMap
 import it.unimi.dsi.fastutil.ints.IntArraySet
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet
 import org.rsmod.annotations.InternalApi
 import org.rsmod.game.ui.collection.ComponentEventMap
 import org.rsmod.game.ui.collection.ComponentTargetMap
@@ -22,6 +23,11 @@ public class UserInterfaceMap(
     public val closeQueue: IntArraySet = IntArraySet(),
 ) {
     @InternalApi public var closeModal: Boolean = false
+
+    /** Modal ids opened through the persistent-ifopen admin path. Those modals are skipped by
+     * the normal modal-auto-close cycle so agent-driven UI tests can inspect them without racing
+     * the client-side 30-60s modal lifetime. */
+    @InternalApi public val modalIdsPersistent: MutableSet<Int> = IntOpenHashSet()
 
     public var frameResizable: Boolean = false
 
