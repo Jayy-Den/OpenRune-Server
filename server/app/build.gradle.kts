@@ -50,4 +50,6 @@ tasks.named<JavaExec>("run") {
 tasks.named<ShadowJar>("shadowJar") {
     archiveFileName.set("server.jar")
     mergeServiceFiles()
+    // The dependency graph has grown past the 65535-entry zip limit.
+    isZip64 = true
 }
