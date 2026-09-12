@@ -175,6 +175,10 @@ class AbilityBuilder {
         effects += Effect.Broadcast(text, radius)
     }
 
+    fun message(text: String, target: TargetExpr = TargetExpr.CurrentTarget) {
+        effects += Effect.Message(text, target)
+    }
+
     fun run(ability: String) {
         effects += Effect.Run(ability)
     }
@@ -205,6 +209,10 @@ class AbilityBuilder {
 
     fun freeze(ticks: Int, odds: Odds) {
         effects += Effect.Freeze(ticks, odds.chance, odds.outOf)
+    }
+
+    fun disablePrayers() {
+        effects += Effect.DisablePrayers
     }
 
     fun statDrain(block: StatDrainBuilder.() -> Unit) {
@@ -254,8 +262,10 @@ class AbilityBuilder {
         launch: String? = null,
         impact: String? = null,
         hit: Effect.Hit? = null,
+        resolveOnImpact: Boolean = false,
     ) {
-        effects += Effect.Projectile(spotanim, travel, config, target, launch, impact, hit)
+        effects +=
+            Effect.Projectile(spotanim, travel, config, target, launch, impact, hit, resolveOnImpact)
     }
 
     /**
@@ -275,6 +285,7 @@ class AbilityBuilder {
         var target: TargetExpr = TargetExpr.CurrentTarget
         var launch: String? = null
         var impact: String? = null
+        var resolveOnImpact: Boolean = false
         private var hitPayload: Effect.Hit? = null
 
         fun hit(
@@ -299,6 +310,7 @@ class AbilityBuilder {
                 launch = launch,
                 impact = impact,
                 hit = hitPayload,
+                resolveOnImpact = resolveOnImpact,
             )
     }
 

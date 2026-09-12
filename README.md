@@ -35,7 +35,7 @@ OpenRune Server adheres to OSRS protocols, giving you the freedom to connect any
 
 ## 📊 Content progress
 
-Skills **17/23** · Bosses **8/169** · Raids **0/4** · Minigames **0/51**
+Skills **17/23** · Bosses **10/169** · Raids **0/4** · Minigames **0/51**
 
 Full breakdown in **[PROGRESS.md](PROGRESS.md)**, including every content module and
 the bosses that already have drop tables and only need the encounter writing.
@@ -95,6 +95,10 @@ Note: RSprox for Private Servers only works currently on Windows and Linux, NOT 
 
 > [!WARNING]
 > And stay away from client's like Devious, as they have been caught adding Account Stealer into their client.
+## 🤖 AI testing (MCP)
+
+The [OpenRune-Developer-Tools](https://github.com/OpenRune/OpenRune-Developer-Tools) client plugin runs a local MCP server (`http://127.0.0.1:7780/mcp`) so AI agents like Claude can test server content in a live client: walk NPC dialogue trees, screenshot and diff interfaces, read varbits/clientscript history, interact with NPCs/objects/items and wait on game conditions. A live dashboard at `http://127.0.0.1:7780/` shows every call the AI makes, with results and screenshots. Setup, example prompts and verification flows are documented in [AGENTS.md](AGENTS.md).
+
 ## 📦 Release builds
 
 CI can produce a self-contained `openrune-server-release.zip` with `server.jar`, `game.yml`, and compiled `.data/`. Pushes to `production` publish automatically; other branches can be built manually from **Actions → Release Server**.

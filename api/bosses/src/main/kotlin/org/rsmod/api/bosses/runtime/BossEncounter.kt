@@ -30,6 +30,7 @@ class BossEncounter(
     private val cooldowns = mutableMapOf<String, Int>()
     private val forcedTickLastFired = mutableMapOf<String, Int>()
     private var rotationCursor = 0
+    private var rotationStarted = false
     private var basicAttackCount = 0
     private var forceAttackThreshold = -1
 
@@ -45,6 +46,7 @@ class BossEncounter(
         currentPhaseName = phaseName
         phaseEnteredTick = tick
         rotationCursor = 0
+        rotationStarted = false
         cooldowns.clear()
         forcedTickLastFired.clear()
         basicAttackCount = 0
@@ -126,6 +128,12 @@ class BossEncounter(
 
     private fun selectRotation(selector: Selector.Rotation): String? {
         if (selector.sequence.isEmpty()) return null
+        if (!rotationStarted) {
+            rotationStarted = true
+            if (selector.randomStart) {
+                rotationCursor = Random.nextInt(selector.sequence.size)
+            }
+        }
         val ability = selector.sequence[rotationCursor % selector.sequence.size]
         rotationCursor++
         return ability
@@ -152,7 +160,24 @@ class BossEncounter(
             is Condition.OnPhaseTick -> false
             is Condition.IncomingHitDamageAtLeast -> false
             is Condition.PlayerEnterRange -> false
-            is Condition.TargetPraying -> false
+            is Condition.TargetPraying -> target != null && target.isProtectingFrom(condition.type)
         }
+    }
+
+    private fun Player.isProtectingFrom(type: HitType): Boolean =
+        when (type) {
+            HitType.Melee -> vars[PROTECT_FROM_MELEE] > 0
+            HitType.Ranged -> vars[PROTECT_FROM_MISSILES] > 0
+            HitType.Magic,
+            HitType.Dragonfire,
+            HitType.DragonfireMetal,
+            HitType.WyvernIce -> vars[PROTECT_FROM_MAGIC] > 0
+            HitType.Typeless -> false
+        }
+
+    private companion object {
+        private const val PROTECT_FROM_MELEE = "varbit.prayer_protectfrommelee"
+        private const val PROTECT_FROM_MISSILES = "varbit.prayer_protectfrommissiles"
+        private const val PROTECT_FROM_MAGIC = "varbit.prayer_protectfrommagic"
     }
 }

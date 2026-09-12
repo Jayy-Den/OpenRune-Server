@@ -9,9 +9,14 @@ import org.rsmod.api.bosses.spec.*
 import org.rsmod.api.bosses.spec.HitType as BossHitType
 import org.rsmod.api.combat.commons.CombatEffects
 import org.rsmod.api.combat.commons.DragonfireProtection
+import org.rsmod.api.combat.commons.player.combatPlayDefendAnim
 import org.rsmod.api.combat.commons.player.finishNpcHit
+import org.rsmod.api.combat.commons.player.queueCombatRetaliate
 import org.rsmod.api.combat.commons.types.MeleeAttackType
 import org.rsmod.api.npc.access.StandardNpcAccess
+import org.rsmod.api.player.disablePrayers
+import org.rsmod.api.player.hit.queueImpactHit
+import org.rsmod.api.player.hit.modifier.PlayerHitModifier
 import org.rsmod.api.player.output.mes
 import org.rsmod.api.player.stat.hitpoints
 import org.rsmod.game.entity.Npc
@@ -52,6 +57,7 @@ class EffectInterpreter(
             }
             is Effect.Delay -> access.delay(effect.ticks)
             is Effect.NoOp -> {}
+            is Effect.Message -> applyMessage(effect)
 
             is Effect.Hit -> applyHit(effect)
             is Effect.Projectile -> fireProjectile(access, effect)
@@ -60,6 +66,7 @@ class EffectInterpreter(
             is Effect.Summon -> summon(effect)
             is Effect.Poison -> applyPoison(effect)
             is Effect.Freeze -> applyFreeze(effect)
+            is Effect.DisablePrayers -> target.disablePrayers()
             is Effect.StatDrain -> applyStatDrain(effect)
             is Effect.Transmog -> {
                 val npcType = ServerCacheManager.getNpc(effect.to.asRSCM(RSCMType.NPC))
@@ -160,12 +167,26 @@ class EffectInterpreter(
                 damage = if (cap <= 0) 0 else deps.random.of(cap + 1)
             }
             if (damage > 0) {
-                hit.spotanim?.let {
-                    t.spotanim(it, delay = projAnim.clientCycles, height = hit.spotanimHeight)
-                }
+                hit.spotanim?.let { t.spotanim(it, delay = projAnim.clientCycles, height = hit.spotanimHeight) }
             }
-            t.finishNpcHit(npc, projAnim.serverCycles, hit.type.toEngine(), damage, deps.playerHitModifier)
+            if (proj.resolveOnImpact) {
+                t.finishNpcImpactHit(npc, projAnim.serverCycles, hit.type.toEngine(), damage, deps.playerHitModifier)
+            } else {
+                t.finishNpcHit(npc, projAnim.serverCycles, hit.type.toEngine(), damage, deps.playerHitModifier)
+            }
         }
+    }
+
+    private fun Player.finishNpcImpactHit(
+        source: Npc,
+        delay: Int,
+        type: HitType,
+        damage: Int,
+        modifier: PlayerHitModifier,
+    ) {
+        queueCombatRetaliate(source)
+        queueImpactHit(source, delay, type, damage, modifier)
+        combatPlayDefendAnim()
     }
 
     private fun applyTileAoE(aoe: Effect.TileAoE) {
@@ -263,6 +284,17 @@ class EffectInterpreter(
         return true
     }
 
+    private fun applyMessage(effect: Effect.Message) {
+        val targets = when (val t = effect.target) {
+            is TargetExpr.Single -> listOfNotNull(resolveSingle(t))
+            is TargetExpr.Multi -> resolveMulti(t)
+            else -> listOf(target)
+        }
+        for (t in targets) {
+            t.mes(effect.text)
+        }
+    }
+
     private fun applyPoison(effect: Effect.Poison) {
         if (deps.random.of(effect.outOf) < effect.chance) {
             CombatEffects.poison(target, effect.damage)
@@ -328,8 +360,24 @@ class EffectInterpreter(
         when (expr) {
             is DamageExpr.Roll -> if (expr.range.isEmpty()) 0 else expr.range.last
             is DamageExpr.Fixed -> expr.value
+            is DamageExpr.NpcMaxHit -> npcFormulaMaxHit(expr, hitType, t)
             else -> evaluateDamage(expr, hitType, t)
         }
+
+    private fun npcFormulaMaxHit(expr: DamageExpr.NpcMaxHit, hitType: BossHitType, t: Player): Int {
+        val raw =
+            when (hitType) {
+                BossHitType.Ranged -> deps.maxHit.getRangedMaxHit(npc, t)
+                BossHitType.Magic,
+                BossHitType.Dragonfire,
+                BossHitType.DragonfireMetal,
+                BossHitType.WyvernIce -> deps.maxHit.getMagicMaxHit(npc, t)
+                BossHitType.Melee,
+                BossHitType.Typeless -> deps.maxHit.getMeleeMaxHit(npc, t, expr.meleeAttackType)
+            }
+        val scaled = if (expr.scale == 1.0) raw else (raw * expr.scale).toInt()
+        return scaled.coerceAtLeast(0)
+    }
 
     private fun dragonfireType(t: BossHitType): DragonfireProtection.DragonfireType? =
         when (t) {
@@ -350,6 +398,11 @@ class EffectInterpreter(
             is DamageExpr.Accuracy -> {
                 val landed = rollAccuracy(hitType, t, expr.meleeAttackType)
                 evaluateDamage(if (landed) expr.on else expr.miss, hitType, t)
+            }
+            is DamageExpr.NpcMaxHit -> {
+                val max = npcFormulaMaxHit(expr, hitType, t)
+                val lo = expr.minHit.coerceIn(0, max)
+                if (max <= 0) 0 else lo + deps.random.of(max - lo + 1)
             }
             is DamageExpr.PercentOfTargetHp -> (t.hitpoints * expr.fraction).toInt()
             is DamageExpr.Min -> minOf(evaluateDamage(expr.a, hitType, t), evaluateDamage(expr.b, hitType, t))

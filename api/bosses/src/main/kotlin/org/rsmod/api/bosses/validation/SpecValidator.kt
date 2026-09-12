@@ -125,7 +125,7 @@ object SpecValidator {
             }
             is Effect.OnEach -> validateEffect(effect.effect, abilityNames, phaseNames, errors, context)
             is Effect.Choose -> {
-                validateSelector(effect.selector, context, abilityNames, errors)
+                validateSelector(effect.selector, context, effect.branches.keys, errors)
                 effect.branches.values.forEach { validateEffect(it, abilityNames, phaseNames, errors, context) }
             }
             else -> {}

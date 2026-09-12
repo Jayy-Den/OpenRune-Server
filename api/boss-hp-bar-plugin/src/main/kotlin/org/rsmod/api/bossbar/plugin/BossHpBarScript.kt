@@ -6,6 +6,7 @@ import jakarta.inject.Singleton
 import java.awt.Color
 import org.rsmod.annotations.InternalApi
 import org.rsmod.api.bossbar.BossHpBarMode
+import org.rsmod.api.config.aliases.ParamInt
 import org.rsmod.api.config.refs.params
 import org.rsmod.api.instances.InstanceManager
 import org.rsmod.api.instances.events.InstancePlayerJoinUnboundEvent
@@ -42,7 +43,7 @@ public class BossHpBarScript @Inject constructor(
     override fun ScriptContext.startup() {
         onEvent<InstancePlayerJoinUnboundEvent> {
             for (npc in instances.npcsForInstance(instanceId)) {
-                if (npcBarMode(npc) == BossHpBarMode.ON_ENTER && npc.hitpoints > 0) {
+                if (npcBarMode(npc) == BossHpBarMode.ON_ENTER && npc.isSlotAssigned && npc.hitpoints > 0) {
                     onOpen(player, npc)
                 }
             }
@@ -90,9 +91,14 @@ public class BossHpBarScript @Inject constructor(
         player.bossHudCurrentHp = npc.hitpoints
         player.bossHudBarSize = 1
 
-        player.setColour("component.hpbar_hud:inner",ORIGINAL_COLORS[0])
-        player.setColour("component.hpbar_hud:health_bar_back",ORIGINAL_COLORS[1])
-        player.setColour("component.hpbar_hud:health_bar_sliding",ORIGINAL_COLORS[2])
+        val backColour = npc.barColour(params.boss_hp_bar_colour_back) ?: ORIGINAL_COLORS[1]
+        val slidingColour = npc.barColour(params.boss_hp_bar_colour_sliding) ?: ORIGINAL_COLORS[2]
+        player.setColour("component.hpbar_hud:inner", ORIGINAL_COLORS[0])
+        player.setColour("component.hpbar_hud:health_bar_back", backColour)
+        player.setColour("component.hpbar_hud:health_bar_sliding", slidingColour)
+        npc.barColour(params.boss_hp_bar_colour_remaining)?.let {
+            player.setColour("component.hpbar_hud:health_bar_remaining", it)
+        }
 
         player.runClientScript(2287, commonComponents, 0)
         openScripts(player)
@@ -128,6 +134,12 @@ public class BossHpBarScript @Inject constructor(
 
     private fun npcBarMode(npc: Npc): BossHpBarMode =
         BossHpBarMode.fromId(npc.visType.paramOrNull(params.boss_hp_bar_mode) ?: 0)
+
+    private fun Npc.barColour(param: ParamInt): Color? {
+        val packed = visType.paramOrNull(param) ?: return null
+        if (packed < 0) return null
+        return Color(packed)
+    }
 
     private fun openScripts(player: Player) {
         player.runClientScript(2887, commonComponents, 255)

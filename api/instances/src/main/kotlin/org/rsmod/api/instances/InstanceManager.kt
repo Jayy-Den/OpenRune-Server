@@ -15,7 +15,6 @@ import org.rsmod.api.instances.events.InstancePlayerLeaveUnboundEvent
 import org.rsmod.api.instances.events.InstanceStartedEvent
 import org.rsmod.api.instances.events.InstanceTimeTickEvent
 import org.rsmod.api.instances.region.InstanceAreaResolver
-import org.rsmod.api.instances.region.InstancePlacement
 import org.rsmod.api.instances.region.OsrsInstancing
 import org.rsmod.api.instances.region.enterCoord
 import org.rsmod.api.instances.region.localCoord
@@ -27,17 +26,14 @@ import org.rsmod.api.player.output.ChatType
 import org.rsmod.api.player.output.mes
 import org.rsmod.api.repo.npc.NpcRepository
 import org.rsmod.api.repo.region.RegionRepository
-import org.rsmod.api.table.InstanceSettingsRow
 import org.rsmod.events.EventBus
 import org.rsmod.events.KeyedEvent
 import org.rsmod.game.MapClock
 import org.rsmod.game.damage.DamageContributions
 import org.rsmod.game.entity.Npc
-import org.rsmod.game.entity.PathingEntity
 import org.rsmod.game.entity.Player
 import org.rsmod.game.entity.PlayerList
 import org.rsmod.game.entity.npc.NpcUid
-import org.rsmod.game.entity.util.PathingEntityCommon
 import org.rsmod.game.region.Region
 import org.rsmod.map.CoordGrid
 import org.rsmod.routefinder.collision.CollisionFlagMap
@@ -224,6 +220,18 @@ constructor(
     public fun instanceForNpc(npc: Npc): InstanceId? = npcInstanceIndex[npc.uid]
 
     public fun npcsForInstance(id: InstanceId): List<Npc> = spawnedNpcs[id] ?: emptyList()
+
+    public fun resolveCoord(session: InstanceSession, coord: CoordGrid): CoordGrid? {
+        val region = regions[session.id] ?: return null
+        val local = RegionLocal(
+            level = coord.level,
+            regionZoneX = coord.mx,
+            regionZoneZ = coord.mz,
+            localX = coord.lx,
+            localZ = coord.lz,
+        )
+        return session.localCoord(region, local)
+    }
 
     public fun attachNpc(instanceId: InstanceId, npc: Npc) {
         spawnedNpcs.getOrPut(instanceId) { mutableListOf() }.add(npc)

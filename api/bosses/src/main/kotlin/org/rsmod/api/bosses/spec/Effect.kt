@@ -17,6 +17,8 @@ sealed interface Effect {
     data class Spotanim(val spot: String, val height: Int = 0, val delay: Int = 0) : Effect
     data class MapSpotanim(val spot: String, val at: TargetExpr, val height: Int = 0, val delay: Int = 0) : Effect
     data class Broadcast(val text: String, val radius: Int = 15) : Effect
+
+    data class Message(val text: String, val target: TargetExpr = TargetExpr.CurrentTarget) : Effect
     data class Delay(val ticks: Int) : Effect
     data object NoOp : Effect
 
@@ -37,6 +39,7 @@ sealed interface Effect {
         val launch: String? = null,
         val impact: String? = null,
         val hit: Hit? = null,
+        val resolveOnImpact: Boolean = false,
     ) : Effect
 
     data class TileAoE(
@@ -77,6 +80,7 @@ sealed interface Effect {
 
     data class Poison(val damage: Int, val chance: Int = 1, val outOf: Int = 1) : Effect
     data class Freeze(val ticks: Int, val chance: Int = 1, val outOf: Int = 1) : Effect
+    data object DisablePrayers : Effect
     data class StatDrain(val entries: List<StatDrainEntry>) : Effect {
         init {
             require(entries.isNotEmpty()) { "StatDrain requires at least one entry." }
