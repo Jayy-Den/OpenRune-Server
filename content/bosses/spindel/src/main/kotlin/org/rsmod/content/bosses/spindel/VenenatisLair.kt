@@ -47,6 +47,8 @@ constructor(private val playerList: PlayerList) : PluginScript() {
             onOpLoc1(entry.enterLoc) { enterLair(entry) }
             onOpLoc2(entry.enterLoc) { peekLair(entry) }
         }
+        // The multi den's exit leads into the shared Escape Caves (handled by the lair-caves
+        // module); only the singles den (Spindel/Web Chasm) exits back to its surface entrance.
         onOpLoc1(EXIT_LOC) { leaveLair(it.loc) }
     }
 
@@ -58,6 +60,11 @@ constructor(private val playerList: PlayerList) : PluginScript() {
     private suspend fun ProtectedAccess.leaveLair(exit: BoundLocInfo) {
         arriveDelay()
         val entry = entries.firstOrNull { it.exitLoc == exit.coords } ?: return
+        // Guard against double-handling: the multi den's exit loc is shared with the Escape Caves
+        // module, which teleports the player into the caves instead of the surface.
+        if (entry.cfg == VENENATIS_LAIR) {
+            return
+        }
         telejump(entry.exit, TeleportType.Exempt)
     }
 
