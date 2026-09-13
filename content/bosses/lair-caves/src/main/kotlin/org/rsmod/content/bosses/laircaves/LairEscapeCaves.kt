@@ -77,12 +77,12 @@ constructor(
             LairCaveExit("loc.wild_vetion_exit01", "Vet'ion's Rest"),
         )
 
-    /** Singles lair exit tile -> surface entrance tile. Web Chasm's exit is handled by the
-     *  spindel module, which already routes it to the surface. */
+    /** Singles lair exit tile -> surface entrance tile (Web Chasm included). */
     private val singlesExits =
         mapOf(
             CoordGrid(1758, 11531, 0) to CoordGrid(3115, 3676, 0), // Hunter's End (Artio)
             CoordGrid(1886, 11534, 1) to CoordGrid(3180, 3683, 0), // Skeletal Tomb (Calvar'ion)
+            CoordGrid(1630, 11527, 2) to CoordGrid(3182, 3745, 0), // Web Chasm (Spindel)
         )
 
     /** Most recent arrival per lair exit loc, for the 10-second pursuit rule. */
