@@ -1367,6 +1367,7 @@ maxRange = 40
 respawnRate = 30
 [npc.params]
 "param.killcount_varp"="varp.total_vardorvis_kills"
+"param.killcount_varp_awakened"="varp.total_vardorvis_awakened_kills"
 "param.boss_hp_bar_mode"=2
 "param.death_anim"="seq.npc_vardorvis_01_death_01"
 "param.melee_strength"=9

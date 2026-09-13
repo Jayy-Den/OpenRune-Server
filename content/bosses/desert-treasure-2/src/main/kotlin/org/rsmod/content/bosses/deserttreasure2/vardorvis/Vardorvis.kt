@@ -1,4 +1,4 @@
-package org.rsmod.content.bosses.vardorvis
+package org.rsmod.content.bosses.deserttreasure2.vardorvis
 
 import dev.openrune.ServerCacheManager
 import dev.openrune.rscm.RSCM.asRSCM
@@ -99,6 +99,7 @@ constructor(
                         deps.worldQueues.add(AXE_FIRST_DELAY) { runAxeSet(npc, allowStrangle = false) }
                     }
                 } else {
+                    if (isAwakened(npc)) npc.respawns = false
                     deps.worldQueues.add(BARRIER_DEATH_DELAY) { dropArenaBarrier(npc, animated = true) }
                 }
             }
@@ -583,8 +584,7 @@ constructor(
         }
     }
 
-    // Placeholder
-    private fun isAwakened(npc: Npc): Boolean = false
+    private fun isAwakened(npc: Npc): Boolean = npc.vars["varn.awakened_state"] == 1
 
     private fun Npc.hpFraction(): Double =
         hitpoints.toDouble() / baseHitpointsLvl.coerceAtLeast(1)

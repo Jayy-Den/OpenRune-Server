@@ -1,4 +1,4 @@
-package org.rsmod.content.bosses.vardorvis
+package org.rsmod.content.bosses.deserttreasure2.vardorvis
 
 internal object VardorvisScaling {
     const val MIN_DEFENCE: Int = 0

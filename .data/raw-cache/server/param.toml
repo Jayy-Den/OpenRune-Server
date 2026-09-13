@@ -859,3 +859,9 @@ isServerOnly = true
 type = "BOOLEAN"
 defaultInt = 1
 isMembers = true
+
+[[params]]
+id = "param.killcount_varp_awakened"
+isServerOnly = true
+type = "VARP"
+isMembers = true

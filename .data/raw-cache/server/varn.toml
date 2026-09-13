@@ -35,9 +35,6 @@ id = "varn.gorilla_protect_hits"
 id = "varn.gorilla_miss_streak"
 
 [[varn]]
-id = "varn.npc_poison_severity"
-
-[[varn]]
 id = "varn.gorilla_protect_switching"
 
 [[varn]]
@@ -51,3 +48,13 @@ id = "varn.guaranteed_hit"
 
 [[varn]]
 id = "varn.venenatis_attacks"
+
+[[varn]]
+id = "varn.awakened_state"
+
+[[varn]]
+id = "varn.skip_killcount"
+
+[[varn]]
+id = "varn.npc_poison_severity"
+

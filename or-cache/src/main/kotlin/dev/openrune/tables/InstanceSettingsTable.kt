@@ -179,7 +179,7 @@ object InstanceSettingsTable {
 
         row("dbrow.instance_vardorvis") {
             column(KEY, "vardorvis")
-            columnCoord(EXIT_COORD, CoordGrid(1117, 3431, 0))
+            columnCoord(EXIT_COORD, CoordGrid(1117, 3428, 0))
             columnCoord(ENTER_COORD, CoordGrid(1119, 3428, 0))
             column(FEE, 0)
             column(MAX_PLAYERS, 1)

@@ -222,4 +222,5 @@ object BaseParams {
     val translate_level: ParamInt = param("translate_level")
     val killcount_varp: ParamVarp = param("killcount_varp")
     val killcount_notify: ParamBool = param("killcount_notify")
+    val killcount_varp_awakened: ParamVarp = param("killcount_varp_awakened")
 }

@@ -15,4 +15,6 @@ td_shield_up=13
 td_overhead_style=14
 guaranteed_hit=15
 venenatis_attacks=16
-npc_poison_severity=17
+awakened_state=17
+skip_killcount=18
+npc_poison_severity=19
