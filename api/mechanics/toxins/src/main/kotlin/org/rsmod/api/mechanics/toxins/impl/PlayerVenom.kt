@@ -3,6 +3,7 @@ package org.rsmod.api.mechanics.toxins.impl
 import org.rsmod.api.config.refs.done.hitmark_groups
 import org.rsmod.api.mechanics.toxins.Toxin
 import org.rsmod.api.mechanics.toxins.ToxinImmunity
+import org.rsmod.api.player.cheat.adminGodMode
 import org.rsmod.api.player.hit.modifier.NoopPlayerHitModifier
 import org.rsmod.api.player.hit.queueHit
 import org.rsmod.api.player.output.ChatType
@@ -25,6 +26,10 @@ public object PlayerVenom {
     public fun tryVenom(player: Player): Boolean = applyVenom(player)
 
     private fun applyVenom(player: Player): Boolean {
+        // Admin god mode grants full toxin immunity, consistent with its damage immunity.
+        if (player.adminGodMode) {
+            return false
+        }
         if (ToxinImmunity.hasVenomImmunity(player)) {
             return false
         }

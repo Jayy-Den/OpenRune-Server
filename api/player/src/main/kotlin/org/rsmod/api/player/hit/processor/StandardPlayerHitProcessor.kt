@@ -7,6 +7,7 @@ import dev.openrune.types.aconverted.SynthType
 import kotlin.math.min
 import org.rsmod.api.config.constants
 import org.rsmod.api.config.refs.BaseParams
+import org.rsmod.api.player.cheat.adminGodMode
 import org.rsmod.api.player.death.recordDeathCause
 import org.rsmod.api.player.death.resolveDeathCause
 import org.rsmod.api.player.events.PlayerHitEvents
@@ -34,6 +35,12 @@ public object StandardPlayerHitProcessor : QueuedPlayerHitProcessor {
         }
 
     override fun ProtectedAccess.process(hit: Hit) {
+        // Admin god mode blocks all incoming damage, including hits queued with no-op modifiers
+        // that bypass the standard hit modifier (e.g. poison, venom and disease damage-over-time
+        // ticks). This mirrors the check in [DamageOnlyPlayerHitProcessor].
+        if (player.adminGodMode) {
+            return
+        }
         if (!hit.isValid(this)) {
             return
         }

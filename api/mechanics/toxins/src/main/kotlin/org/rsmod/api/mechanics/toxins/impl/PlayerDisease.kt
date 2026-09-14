@@ -8,6 +8,7 @@ import kotlin.random.Random
 import org.rsmod.api.config.refs.done.hitmark_groups
 import org.rsmod.api.config.refs.params
 import org.rsmod.api.mechanics.toxins.Toxin
+import org.rsmod.api.player.cheat.adminGodMode
 import org.rsmod.api.player.hit.modifier.NoopPlayerHitModifier
 import org.rsmod.api.player.hit.processor.InstantPlayerHitProcessor
 import org.rsmod.api.player.hit.takeInstantHit
@@ -69,6 +70,10 @@ public object PlayerDisease {
     }
 
     private fun applyDisease(player: Player, drainPerTick: Int): Boolean {
+        // Admin god mode grants full toxin immunity, consistent with its damage immunity.
+        if (player.adminGodMode) {
+            return false
+        }
         if (eligibleDiseaseStats().isEmpty()) {
             return false
         }
