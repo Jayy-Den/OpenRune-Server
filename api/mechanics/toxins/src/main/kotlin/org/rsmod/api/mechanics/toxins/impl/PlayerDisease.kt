@@ -153,7 +153,7 @@ public object PlayerDisease {
                 modifier = NoopPlayerHitModifier,
             )
         } else {
-            applyDiseaseDrain(player, RSCM.getReverseMapping(RSCMType.STAT,targetStat.id), drain)
+            applyDiseaseDrain(player, RSCM.getReverseMapping(RSCMType.STAT, targetStat.id), drain)
         }
 
         player.timer("timer.player_disease", TICK_INTERVAL)

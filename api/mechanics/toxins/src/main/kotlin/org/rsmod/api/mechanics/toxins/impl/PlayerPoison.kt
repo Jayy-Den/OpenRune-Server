@@ -3,8 +3,8 @@ package org.rsmod.api.mechanics.toxins.impl
 import org.rsmod.api.config.refs.done.hitmark_groups
 import org.rsmod.api.config.refs.params
 import org.rsmod.api.mechanics.toxins.Toxin
-import org.rsmod.api.player.cheat.adminGodMode
 import org.rsmod.api.mechanics.toxins.ToxinImmunity
+import org.rsmod.api.player.cheat.adminGodMode
 import org.rsmod.api.player.hit.modifier.NoopPlayerHitModifier
 import org.rsmod.api.player.hit.queueHit
 import org.rsmod.api.player.output.ChatType
