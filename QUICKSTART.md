@@ -97,6 +97,8 @@ cd %USERPROFILE%\Documents\OpenRune-Server
 ```
 
 **Computer-control MCP (agent "eyes/hands" for QA):**
+- > **Not the default tool.** For in-game QA, start with the **devtools MCP** (next section) — it reads real game state and handles ~90% of the work. Use this computer-control server only for what devtools can't do: the pre-login screen (synthetic plugin keys don't reach it), driving arbitrary OS windows, or as a fallback while devtools is down.
+- The server itself is tool-agnostic (stdio MCP, `uvx computer-control-mcp@latest`) — any agent client just adds it under its own `mcpServers` config with the command below. The Freebuff-specific notes in this section (config locations, approval flow) only apply to Freebuff.
 - Config lives in `.agents/mcp.json` and `.freebuff/mcp-server.json` (both written 2026-09-09): launches `uvx computer-control-mcp@latest` (uvx resolves from the user's local hermes bin), screenshots dir `.freebuff/mcp-shots`.
 - **Verified working end-to-end (2026-09-09):** stdio handshake OK (server `ComputerControlMCP` v1.13.0), 15 tools listed (`take_screenshot`, `take_screenshot_with_ocr`, `click_screen`, `type_text`, `press_keys`, `list_windows`, `key_down/up`, `mouse_down/up/move`, `drag_mouse`, `activate_window`, `get_screen_size`, `wait_milliseconds`), and a real `take_screenshot` call returned a live PNG (inline base64 — the shots dir stays empty by design).
 - **Why it never attached (found 2026-09-09 by reading orchestrator.js):** Freebuff's orchestrator only reads MCP config from the **home directory**: `~/.agents/mcp.json` (`{"mcpServers": {...}}`), with per-server `enabled`/approval state in `~/.freebuff/mcp.json`. The project-level `.agents/mcp.json` and `.freebuff/mcp-server.json` (kept as reference) are **inert** — wrong location.
@@ -121,3 +123,84 @@ cd %USERPROFILE%\Documents\OpenRune-Server
   java -cp ".;%REP%\jna-5.13.0.jar;%REP%\jnagmp-3.0.0.jar" Typer7 "OpenRune Server" "<your-gui-title-suffix>" <password-from-run-driver.cmd>
   ```
   Pass the exclude filter as a string unique to your own logged-in GUI window (its title suffix), so Typer7 never grabs it. Confirmed: `Login accepted user='<test user>' ... slot=N` → clean `Logout completed` ~100s later.
+
+---
+
+## 🧪 In-game agent tooling (Devtools MCP) — setup, integration, login recipe
+
+**Status (verified 2026-09-15):** full chain working — plugin sideloaded, MCP live on `127.0.0.1:7780`, test account logged in and driven in-world entirely through MCP tool calls (via Freebuff's native connector; every other agent tool reaches the same endpoint through the options below). Nothing here is specific to one agent — the helpers are plain Java/Python/PowerShell and the tools are plain JSON-RPC over HTTP.
+
+> **Two complementary MCP servers, both documented in this file — which to use first:**
+> 1. **Devtools MCP (this section) is the default.** It reads the game's real state — inventories, NPCs, widgets, chat, effects/projectiles, client state — with validated schemas and sub-second calls. Do ~90% of QA work here.
+> 2. **Computer-control MCP (section above) is the fallback**, for exactly three cases: (a) the pre-login screen — the plugin's synthetic keys don't reach it, so password entry is OS-level by design; (b) anything the devtools tools can't address (e.g. clicking a coordinate on an interface with no server-side hook); (c) devtools being down (client crashed / client not yet logged in).
+> 3. **Never substitute OCR/pixel work for a state read** — if a devtools tool can answer the question ("did the bow fire?", "how many arrows left?"), use it. OCR is a ~20s-per-call last resort.
+>
+> Privacy/security notes are at the end of this section.
+
+**Architecture (3 layers):**
+1. **Plugin → client:** OpenRune-Developer-Tools (the `flux-client-mcp` server) runs *inside* the RuneLite client and exposes ~25 tools (inventories, equipment, NPCs, chat, dialogues, widgets, effects/projectiles, screenshots, client state) over HTTP on `127.0.0.1:7780/mcp`. No auth; localhost only.
+2. **Agent ↔ plugin:** your coding agent calls those tools the same way any MCP client would — a native HTTP connector, a stdio bridge, or raw HTTP from the shell (see step 2; all three hit the identical endpoint).
+3. **Driver rig → proxy:** `.freebuff/driver/` launches a headless second RSProx session (port offset +5 → 43605/43706, never collides with a GUI session) and monitors login events. (`.freebuff/` is only the repo's helpers directory — its scripts work identically from any agent; nothing in them depends on a specific tool.)
+
+**1) Plugin sideload (done once, survives updates):**
+- Jar: `%USERPROFILE%\.rlcustom\sideloaded-plugins\OpenRune-Developer-Tools.jar` (a `.bak` of the original sits next to it).
+- Auto-enable key in the active RuneLite profile (`%USERPROFILE%\.rlcustom\profiles2\default-*.properties`): `runelite.openrunedeveloptoolsplugin=true`.
+- **Java-version gotcha (cost a session):** the client must run RSProx's **bundled JDK 11** (`%USERPROFILE%\AppData\Local\RSProx\jdk`). On host Java 21 the plugin crashes with `LambdaConversionException` and 7780 never binds. Driver/Typer7 classes must be compiled `--release 11` to match.
+
+**2) Agent integration — pick whichever fits your coding tool (all hit the same endpoint):**
+- **A. Native MCP HTTP connector** — any agent client that supports remote MCP servers (Freebuff, Claude Desktop/Code, Cursor, Windsurf, Codex, …). Name it e.g. `game-devtools` and register the URL:
+  ```json
+  { "mcpServers": { "game-devtools": { "type": "http", "url": "http://127.0.0.1:7780/mcp" } } }
+  ```
+  In Freebuff: Connectors → Add → paste the block → approve. In other tools: add the same entry wherever yours reads `mcpServers` (`~/.agents/mcp.json`, project `.mcp.json`, or its settings UI) and restart/reload if needed.
+- **B. stdio bridge** — for MCP clients that only speak stdio:
+  ```json
+  { "mcpServers": { "game-devtools": { "command": "npx", "args": ["-y", "mcp-remote", "http://127.0.0.1:7780/mcp"] } } }
+  ```
+- **C. Raw HTTP (no MCP client at all)** — every tool is plain JSON-RPC, so any agent with shell access can drive it directly:
+  ```bash
+  curl -s -X POST http://127.0.0.1:7780/mcp -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_client_state","arguments":{}}}'
+  ```
+  Ready-made shim: `python .freebuff/scratch/mcp.py <tool> '<json-args>'` (wraps the same call and prints the result).
+- **Lifetime (all options):** the MCP server dies with the game client. After any client restart: relaunch the rig, re-login, then reconnect/retry your integration if it doesn't recover on its own.
+
+**2b) Upstream reference — read the project README for the full picture:**
+https://github.com/OpenRune/OpenRune-Developer-Tools (standalone sideloaded plugin for RuneLite-based clients; builds against the Fluxious client's shaded jar, `gradlew jar`, auto-deploys to `~/.runelite|.rsprox|.fluxious/sideloaded-plugins/`). Key things the README documents beyond this file:
+- **Live activity dashboard:** while the plugin runs, `http://127.0.0.1:7780/` serves a real-time dashboard of every MCP tool call — tool name, arguments, duration, inline pretty-printed results, screenshot thumbnails with zoom. It polls `GET /log?after=<id>` (same port); the server keeps the last 100 calls, so a refresh replays recent history. Verified working in this setup (2026-09-15). Useful for watching what an agent is doing in-game without attaching a debugger.
+- **Tool catalog (~40 tools, grouped):**
+  - *Inspection:* `screenshot` (canvas PNG, croppable to widget/interface/region), `get_widget`, `dump_interface` (diff two dumps to spot layout changes), `list_interfaces`, `get_widget_at`, `set_widget` (client-side live edit), `get_client_state`, `get_skills`
+  - *Raw input:* `click`, `click_component`, `hover`, `drag`, `type_chat` (works for `::` commands), `press_key` (char, ENTER, ESCAPE, F1-F12, …)
+  - *World:* `walk_to`, `list_npcs`, `list_players`, `list_objects`, `list_ground_items`, `pickup_item`, `list_projectiles`, `get_inventory` (any container: 93 inv, 94 worn, 95 bank, custom), `list_inventories`
+  - *Interaction (one call, no screenshots):* `interact_npc` (cache-defined option, default Talk-to), `get_npc_menu` (live right-click menu incl. server-added options), `click_menu_option`, `item_action` (right-click + option in one call), `interact_object`, `interact_player`, `widget_action`, `invoke_menu_action` (raw menuAction escape hatch)
+  - *Dialogue:* `get_dialogue`, `continue_dialogue` (blocks until state changes), `select_option`, `enter_input` (chatbox input, string/amount)
+  - *History & vars:* `get_script_history` (clientscripts fired, with tick+args), `get_var_history` (varbit/varp/varc old→new), `get_var`, `get_projectile_history`, `get_effect_history` (animations/graphics), `get_chat_history`
+  - *Waiting:* `wait_for` — blocks until a condition (`idle`, `at_tile`, `npc_dead`, `dialogue`, `interface_open/closed`, `chat_message`), polling every 100ms; replaces most hand-rolled sleep-and-poll loops
+- **Claude Code / Claude Desktop integration examples** from the README: `claude mcp add --transport http flux http://127.0.0.1:7780/mcp`, and to skip per-call permission prompts, allow the whole server in `.claude/settings.local.json`: `{ "permissions": { "allow": ["mcp__flux"] } }`.
+- **`--developer-mode` not needed here:** the README says to start the client with it and enable the plugin manually; our rig instead sideloads the jar + sets `runelite.openrunedeveloptoolsplugin=true` in the profile, so the plugin auto-enables on every launch (verified 2026-09-15 — driver-launched clients never pass the flag and the server comes up). Don't "fix" the rig to match the README.
+
+**3) Login procedure (the proven recipe, in order):**
+1. Prereqs: game server on 43594 (embedded postgres must be up — it listens on **52198**, not 5432, data dir `.data/postgres`).
+2. Patch the profile's `loginscreen.username=<test user>` (same string length avoids layout churn) *before* launching.
+3. Launch the driver detached (PowerShell `Start-Process` with `-RedirectStandardOutput` hangs — use the `cmd /c ... > log 2>&1` argument form):
+   ```
+   %USERPROFILE%\AppData\Local\RSProx\jdk\bin\java.exe -Dsun.java2d.d3d=false -cp %USERPROFILE%\.rsprox\launcher\repository\*;%USERPROFILE%\Documents\OpenRune-Server\.freebuff\driver Driver qa01 <pass> 20
+   ```
+   The third arg is the login watchdog in minutes — it hard-exits (killing the client) if no login happens in time, so **complete the login promptly**.
+4. Wait for `127.0.0.1:7780` to LISTEN (plugin up = client booted), then confirm `get_client_state` shows `LOGIN_SCREEN`.
+5. Open the login form with a **devtools canvas click** on "Existing User": canvas (473,295) in fixed mode (765×503) / (1022,289) maximized. Find positions deterministically with the pixel classifier `.freebuff/scratch/scan-classes.py` (white = buttons/fields, yellow = form text, red = errors) — never guess offsets; Typer7's hardcoded ones are stale for other window sizes.
+6. **The plugin's synthetic keys do NOT reach the pre-login form** — password entry must be OS-level: make the window topmost+foreground (`.freebuff/scratch/topmost.ps1 -GamePid <pid>`), calibrate the canvas↔screen offset (park the cursor at a known screen point, read back `mouseX/mouseY` from `get_client_state`; offset is linear), then one atomic script: OS-click the password row → SendKeys password → Enter (`.freebuff/scratch/login-final.ps1`).
+7. Oracles: `get_client_state` → `LOGGED_IN`; server log `Login accepted user='<test user>' ...`; driver log `ON-LOGIN`.
+
+**Gotchas checklist (each cost real time once):**
+- Only **one** driver session per `~/.rsprox` — a zombie client holding 43605 silently blocks every new driver launch. Check `netstat -ano | findstr 43605` and kill stale PIDs first.
+- RuneLite remembers maximized-vs-restored per profile; the client may come up either way. **Recalibrate the offset per window size** (fixed-mode offset ≈ (562,272) when the window is at its default position; maximized ≈ (0,+23) — but always re-measure, don't trust these numbers).
+- A login that bounces back to `LOGIN_SCREEN` ~25s after submit was **rejected by the server** — check the server log. Long-uptime servers can wedge their postgres pool (`Pool is empty, failed to create/setup connection`); a server restart fixes it.
+- After `::master`, the queued level-up dialogues swallow all chat input — drain them (click-through) before typing commands.
+- In-world, prefer your integration's native tool calls (options A/B); option C works from any shell and is the fallback when a connector is down. `.freebuff/scratch/mcp.py <tool> '<json>'` is the raw-HTTP shim.
+- OCR (`take_screenshot_with_ocr`) is a ~20s-per-call last resort; pixel classification via the devtools screenshot is faster and deterministic for known UI colors.
+
+**Privacy/security notes:**
+- Both MCP servers are **localhost-only** and unauthenticated by design — anything on this machine can drive the game client or take screenshots. Do not port-forward or expose 7780 / the computer-control stdio bridge beyond the dev machine.
+- **No credentials in tracked files:** driver credentials come from environment variables (`run-driver.cmd` defaults are placeholders); the `.freebuff/scratch/` helper scripts (which may contain a throwaway test-account password) and `driver.log` are git-ignored. Only `Driver.java`, `Typer7.java`, and `run-driver.cmd` are tracked — verify with `git ls-files .freebuff` before committing anything new there.
+- Use **throwaway test accounts only** (e.g. `qa01`) — accounts driven by these tools are created locally against your own server and never touch real Jagex credentials or third-party services.
