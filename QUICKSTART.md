@@ -200,6 +200,30 @@ https://github.com/OpenRune/OpenRune-Developer-Tools (standalone sideloaded plug
 - In-world, prefer your integration's native tool calls (options A/B); option C works from any shell and is the fallback when a connector is down. `.freebuff/scratch/mcp.py <tool> '<json>'` is the raw-HTTP shim.
 - OCR (`take_screenshot_with_ocr`) is a ~20s-per-call last resort; pixel classification via the devtools screenshot is faster and deterministic for known UI colors.
 
+**Dev conveniences verified in-client (2026-09-15):**
+- **Ctrl+Shift + minimap click = instant teleport** (confirmed: ~19-tile jump with zero run-energy loss; a run order loses energy, so state-reads disambiguate). World-map double-click tele is reported to work the same way.
+- **Click a skill (skills tab, F2) as admin → "Guide / Set Level" options menu** → `Enter a level for <skill> (1-99)` input → level + XP set directly. Cleaner than `::master` (no dialogue flood). Lives in `SkillGuideEvents.kt` — admin-only, plain players get the plain guide.
+- The options menu is **interface 219 in the chatbox area** (canvas ≈ (259,434) for option 2 in fixed mode), not mid-screen — locate it with `dump_interface 219` instead of guessing.
+
+## 🎯 Real-OSRS capture pipeline — ground truth for new content
+
+Wiki data is a guess; a proxy capture is proof. The workflow (as used by other OpenRune devs): play the content on **live OSRS with RSProx recording**, then feed the resulting `.bin` capture to your agent/content work as authoritative tick-level ground truth.
+
+**1) Record:** any RSProx session against real OSRS writes `.bin` files under `~/.rsprox/binary/` (folder name = target host; `Old School RuneScape` = live game, `OpenRune Server` = our own server). The binary header embeds the target host and a session hash matching the filename — `oldschool*.runescape.com` in the header = genuine live capture.
+
+**2) Transcribe:** RSProx ships an official text transcription command. From any shell:
+```
+cd %USERPROFILE%\.rsprox\launcher
+%USERPROFILE%\AppData\Local\RSProx\..\jdk\bin\java.exe -cp "repository/*" net.rsprox.proxy.cli.BinaryToStringCommandKt -name <file.bin>
+```
+(Use any host JDK; the `-name` filter matches files **directly under** `~/.rsprox/binary` — copy the bin there first. Output is written alongside it as `.txt`.)
+
+**3) Analyze:** `tools/rsprox/analyze_capture.py <transcribed.txt>` extracts per-NPC ground truth: attack animations (SequenceExtendedInfo), hitsplat values/types/max hit, spotanims (gfx), NPC say-texts, attack rate (median tick gap), the local player's hits received, and OpNpcV2(op=1) attack timings. The transcription is tick-indexed (`[<tick>] <-` clientbound / `-> ` client-to-server), so sequences are reconstructable tick-by-tick.
+
+**Validated:** the same pipeline decodes our **own server's** captures identically — meaning a real-OSRS capture and a capture of our implementation can be diffed tick-for-tick as a regression check for boss/minigame combat.
+
+**Prepared captures:** a community collection of F2P content (every F2P quest, ~50 kills of the new F2P boss) exists for reuse; the Delrith/Demon Slayer fight extracted from one sample gave: cultist leaders say `Arise, Delrith!` (seq 9144, spotanim 93), Delrith max-hits 4-7 with 4-5-tick attack rates, cow-type NPCs use seq 5849/5850 with max 7.
+
 **Privacy/security notes:**
 - Both MCP servers are **localhost-only** and unauthenticated by design — anything on this machine can drive the game client or take screenshots. Do not port-forward or expose 7780 / the computer-control stdio bridge beyond the dev machine.
 - **No credentials in tracked files:** driver credentials come from environment variables (`run-driver.cmd` defaults are placeholders); the `.freebuff/scratch/` helper scripts (which may contain a throwaway test-account password) and `driver.log` are git-ignored. Only `Driver.java`, `Typer7.java`, and `run-driver.cmd` are tracked — verify with `git ls-files .freebuff` before committing anything new there.
