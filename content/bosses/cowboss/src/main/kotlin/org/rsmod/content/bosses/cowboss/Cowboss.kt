@@ -83,7 +83,7 @@ constructor(
         boss("npc.cowboss") {
             stats(attackRate = ATTACK_RATE, aggressionRadius = AGGRO_RADIUS)
 
-            val postSpawn = ability("post_spawn") { include(Effect.External("cowboss.post_spawn")) }
+            val postSpawn = ability("post_spawn") { include(external("cowboss.post_spawn")) }
 
             val melee =
                 ability("melee") {
