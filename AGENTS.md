@@ -277,6 +277,13 @@ on the same port.
 When verifying server content in-game, prefer these tools over asking the user to
 test manually. The plugin self-updates from GitHub releases on client startup.
 
+`QUICKSTART.md` is the operational manual for this checkout: starting the server and
+client, the proven login procedure, which tools to prefer (devtools MCP first,
+OS-level automation second, OCR last resort), and the real-OSRS RSProx capture
+pipeline (`~/.rsprox/binary/` → transcription → `tools/rsprox/analyze_capture.py`)
+used as tick-level ground truth when implementing new content. Read it before
+attempting any in-game verification.
+
 ### Install / connect (one-time)
 
 Download the latest release jar into each client's sideload folder:
