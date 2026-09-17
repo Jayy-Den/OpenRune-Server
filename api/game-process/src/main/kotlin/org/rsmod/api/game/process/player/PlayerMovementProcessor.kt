@@ -143,8 +143,8 @@ constructor(
     }
 
     private fun Player.validatedStep(current: CoordGrid, target: CoordGrid): CoordGrid {
-        if (adminNoClip) {
-            if (current == target) {
+        if (adminNoClip || forcedRoute) {
+            if (adminNoClip && current == target) {
                 return CoordGrid.NULL
             }
             return stepFactory.unvalidated(current, target)

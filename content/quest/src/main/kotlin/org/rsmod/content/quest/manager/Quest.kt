@@ -4,14 +4,18 @@ import com.github.michaelbull.logging.InlineLogger
 import dev.openrune.ServerCacheManager
 import dev.openrune.rscm.RSCM.asRSCM
 import dev.openrune.rscm.RSCMType
+import net.rsprot.protocol.game.outgoing.sound.MidiJingle
 import org.rsmod.api.attr.AttributeKey
 import org.rsmod.api.player.midiJingle
+import org.rsmod.api.player.musicClocks
 import org.rsmod.api.player.protect.ProtectedAccess
 import org.rsmod.api.player.vars.intVarBit
 import org.rsmod.api.player.vars.intVarp
 import org.rsmod.api.table.QuestRow
 import org.rsmod.game.entity.Player
 import org.rsmod.map.CoordGrid
+
+private const val QUEST_COMPLETE_JINGLE = 153
 
 val QUEST_STAGE_MAP_ATTR = AttributeKey<MutableMap<String, Int>>("quest_stages")
 
@@ -206,6 +210,9 @@ data class Quest(
         access.player.questPoints += questPoints
         access.player.questsCompleted++
         access.player.midiJingle(completionJingle)
+
+        access.player.musicClocks = 0
+        access.player.client.write(MidiJingle(QUEST_COMPLETE_JINGLE))
 
         access.ifOpenMain("interface.questscroll")
         access.ifSetText("component.questscroll:quest_title", "You have completed ${displayName}!")
