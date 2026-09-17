@@ -3,7 +3,8 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.bundles.logging)
+    implementation(libs.kotlin.inline.logger)
+    runtimeOnly(libs.logback.classic)
     implementation(libs.jackson.dataformat.yaml)
     implementation(libs.jackson.module.kotlin)
     implementation(projects.api.attr)

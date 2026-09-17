@@ -2,7 +2,6 @@ package org.rsmod.api.script
 
 import dev.openrune.rscm.RSCM.asRSCM
 import dev.openrune.rscm.RSCMType
-import dev.openrune.types.aconverted.AreaType
 import org.rsmod.api.player.events.EngineQueueEvents
 import org.rsmod.api.player.protect.ProtectedAccess
 import org.rsmod.events.EventBus

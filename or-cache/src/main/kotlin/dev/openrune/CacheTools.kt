@@ -7,9 +7,9 @@ import dev.openrune.cache.tools.CacheEnvironment
 import dev.openrune.cache.tools.CacheTool
 import dev.openrune.cache.tools.cacheTool
 import dev.openrune.cache.tools.cs2.PackCs2
+import dev.openrune.cache.tools.iftype.PackIfType
 import dev.openrune.cache.tools.incremental.CacheVerification
 import dev.openrune.cache.tools.incremental.IncrementalSession
-import dev.openrune.cache.tools.iftype.PackIfType
 import dev.openrune.cache.tools.tasks.CacheTask
 import dev.openrune.cache.tools.tasks.TaskType
 import dev.openrune.codegen.startEnumGeneration

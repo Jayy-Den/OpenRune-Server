@@ -21,6 +21,7 @@ import org.junit.jupiter.api.parallel.ResourceLock
 import org.rsmod.annotations.InternalApi
 import org.rsmod.api.config.refs.params
 import org.rsmod.api.game.process.npc.NpcMovementProcessor
+import org.rsmod.api.game.process.npc.hunt.AggressionTolerance
 import org.rsmod.api.game.process.npc.hunt.NpcPlayerHuntProcessor
 import org.rsmod.api.hunt.Hunt
 import org.rsmod.api.player.events.interact.LocContentEvents
@@ -176,6 +177,7 @@ class DraynorSceneryTest {
         }
         val hunting = NpcPlayerHuntProcessor(
             random, clock, Hunt(RayCastValidator(collision), players, npcs, ObjRegistry(updates), locRegistry),
+            AggressionTolerance(),
         )
 
         init {
