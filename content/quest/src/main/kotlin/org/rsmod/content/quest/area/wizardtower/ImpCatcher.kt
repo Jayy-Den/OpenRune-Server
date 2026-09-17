@@ -166,7 +166,7 @@ class ImpCatcher : QuestScript(
             mesbox("You give four coloured beads to Wizard Mizgog.")
             access.invAdd(access.inv, "obj.amulet_of_accuracy")
             mesbox("The wizard hands you an amulet.")
-            quest.advanceQuestStage(access, quest.maxSteps - quest.getQuestStage(access.player))
+            quest.complete(access)
             return
         }
         chatNpc(quiz, "So how are you doing with finding my beads?")

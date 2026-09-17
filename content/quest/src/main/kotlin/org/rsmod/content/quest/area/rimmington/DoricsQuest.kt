@@ -145,7 +145,7 @@ class DoricsQuest : QuestScript(
                 "I can spare you some coins for your trouble, and please use my anvils any time " +
                     "you want.",
             )
-            quest.advanceQuestStage(access, quest.maxSteps - quest.getQuestStage(access.player))
+            quest.complete(access)
         } else {
             chatPlayer(neutral, "I haven't got all of them yet, I'm still working on it.")
             chatNpc(

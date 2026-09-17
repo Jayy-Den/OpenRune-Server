@@ -425,11 +425,7 @@ class ArchmageSedridor @Inject constructor(private val runeMysteries: RuneMyster
         chatPlayer(happy, "Great! Thanks!")
         chatNpc(happy, "My pleasure!")
 
-        // Advance remaining stages up to completion (notes stage -> complete).
-        val remaining = quest.maxSteps - quest.getQuestStage(player)
-        if (remaining > 0) {
-            quest.advanceQuestStage(access, remaining)
-        }
+        quest.complete(access)
 
         when (choice2("I'd better get going.", 1, "Can you teleport me to the Rune Essence Mine?", 2)) {
             1 -> chatPlayer(happy, "I'd better get going.")

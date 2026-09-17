@@ -243,7 +243,7 @@ class GoblinDiplomacy : QuestScript(
                     chatNpc(happy, "It a deal then. Brown armour it is.")
                     access.invDel(access.inv, "obj.goblin_armour")
                     chatNpc(happy, "Thank you for sorting out argument, human. You have reward now.")
-                    quest.advanceQuestStage(access, quest.maxSteps - quest.getQuestStage(access.player))
+                    quest.complete(access)
                 } else {
                     chatPlayer(confused, "But I thought brown was the armour you were changing from...")
                     chatNpc(angry, "Red armour best.")

@@ -169,7 +169,7 @@ class SheepShearer : QuestScript(
             chatPlayer(happy, "Here you go, Fred.")
             repeat(REQUIRED_WOOL) { access.invDel(access.inv, "obj.ball_of_wool") }
             chatNpc(happy, "I guess I'd better pay you then.")
-            quest.advanceQuestStage(access, quest.maxSteps - quest.getQuestStage(access.player))
+            quest.complete(access)
         } else {
             val count = ballsOfWool(player)
             if (count > 0) {

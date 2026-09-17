@@ -149,6 +149,10 @@ data class Quest(
         return newStage
     }
 
+    fun complete(access: ProtectedAccess) {
+        advanceQuestStage(access, maxSteps - getQuestStage(access.player))
+    }
+
     /**
      * Puts the quest back to "not started" for [player]: stage, varp, every registered quest
      * attribute, and the quest points and completion count if it had been finished. Intended for

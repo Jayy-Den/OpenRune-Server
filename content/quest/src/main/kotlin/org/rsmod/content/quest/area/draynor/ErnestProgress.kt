@@ -51,7 +51,7 @@ internal class ErnestProgress(private val quest: Quest) {
             access.player.hauntedStage = quest.maxSteps
             scene()
         } finally {
-            quest.advanceQuestStage(access, quest.maxSteps - quest.getQuestStage(access.player))
+            quest.complete(access)
         }
     }
 
