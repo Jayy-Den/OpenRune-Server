@@ -7917,3 +7917,7 @@
 [clientscript,script7918]=7918
 [clientscript,script7919]=7919
 [clientscript,script7920]=7920
+spawn_menu_init=45500
+spawn_menu_buttons=45518
+spawn_menu_labels=45524
+quest_available_set=45550
