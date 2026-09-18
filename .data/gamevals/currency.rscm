@@ -1,3 +1,5 @@
 standard_gp=0
 pvp_arena_points=1
 stardust=65535
+unidentified_minerals=65533
+golden_nugget=65534

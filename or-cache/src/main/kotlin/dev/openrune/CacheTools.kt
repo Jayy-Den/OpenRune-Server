@@ -41,6 +41,7 @@ import dev.openrune.tables.skills.Cooking
 import dev.openrune.tables.skills.Firemaking
 import dev.openrune.tables.skills.Herblore
 import dev.openrune.tables.skills.Mining
+import dev.openrune.tables.skills.Motherlode
 import dev.openrune.tables.skills.Runecrafting
 import dev.openrune.tables.skills.Slayer
 import dev.openrune.tables.skills.Smithing
@@ -188,6 +189,7 @@ fun tablesToPack(): List<DBTable> = listOf(
     StatComponents.statsComponents(),
     PickableObjects.pickableObjects(),
     Mining.rocks(),
+    Motherlode.payDirt(),
     Cooking.foods(),
     Cooking.ales(),
     Herblore.unfinishedPotions(),
