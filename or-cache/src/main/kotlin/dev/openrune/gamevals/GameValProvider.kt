@@ -305,9 +305,12 @@ class GameValProvider : MutableMappingProvider {
         }
 
         val maxID = maxBaseID[table] ?: -1
-        require(value > maxID) {
-            "Custom value '$value' for key '$key' in table '$table' must exceed the current max base ID $maxID. " +
-                "Cannot override existing osrs IDs."
+        if (value <= maxID) {
+            val existingForValue = tableMappings.entries.firstOrNull { it.value == value }
+            require(existingForValue == null || existingForValue.key == fullKey) {
+                "Cannot override existing osrs ID: '$value' in table '$table' is already mapped to " +
+                    "'${existingForValue?.key}'."
+            }
         }
 
         val existingValueForKey = tableMappings[fullKey]

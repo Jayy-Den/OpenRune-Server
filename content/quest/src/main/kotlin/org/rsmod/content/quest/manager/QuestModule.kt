@@ -21,6 +21,7 @@ public class QuestModule : PluginModule() {
         bindInstance<RestlessGhostQuest>()
         bindInstance<WitchsPotionQuest>()
         bindInstance<LostCityQuest>()
+        bindInstance<SpadeDigScript>()
         bindInstance<StoneCircle>()
         bindInstance<WallyVision>()
         addSetBinding<NpcAttackValidateHook>(SilverlightAttackHook::class.java)

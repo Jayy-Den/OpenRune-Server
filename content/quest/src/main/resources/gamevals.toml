@@ -11,3 +11,9 @@ smokepuff = 1930
 
 [gamevals.clientscript]
 quest_available_set = 45550
+
+# Pirate's Treasure quest state. RuneLite's modern dump only names the backing varbit
+# (ahoy_questvar=408); the vanilla varp table leaves 217 unnamed even though the state
+# (1..4, confirmed by RSProx capture) lives there.
+[gamevals.varp]
+ahoy_questvar = 217
