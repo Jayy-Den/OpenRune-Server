@@ -112,6 +112,14 @@ cd %USERPROFILE%\Documents\OpenRune-Server
 
 **Automated login (headless testing):**
 `.freebuff/driver/` contains a working playtest rig (agent tooling — not needed to play):
+- `SendCmd.java` types one chat line into the game window with OS-level Robot keys (handles `:`)
+  for the cases where the plugin's synthetic keys are refused: `java SendCmd "OpenRune Server" "::item garlic 1"`.
+  Its symbol map covers the shifted and plain keys game commands need (`_ - ( ) * ! + / . , ' =`) —
+  without `_`, `::npcadd 1000 count_draynor` reached the server as `countdraynor` and failed as an
+  unknown npc, with nothing printed in the chatbox to show for it. For one-off commands use
+  `.freebuff/scratch/cmd.sh '::npcadd 1000 count_draynor'`, which already has the JNA classpath and
+  the rig's window title wired up; do **not** use `sendcmd.cmd`, which splits the command on spaces.
+  This is also the fallback when a devtools `type_chat` line loses its leading `:`.
 - `Driver.java` launches a second RSProx session programmatically (`ProxyService.start → allocatePort()+5 → initializeHttpServer → launchRuneLiteClient`) so it never collides with a GUI session (worldlist port is hardcoded `43600 + sessionId`), and reports login events from the proxy's `SessionMonitor`.
 - `Typer7.java` walks the login UI: it makes the client window topmost (synthetic clicks otherwise get swallowed by overlapping windows), clicks the welcome/login button (fixed offset ~x395,y408 in an 820×542 window), then clicks the password row and types the password with Enter.
 - **The gotcha that cost a session:** RuneLite remembers the last username in the active profile (`%USERPROFILE%\.rlcustom\profiles2\default-*.properties`, key `loginscreen.username`) and pre-fills the login box, overriding the vanilla `jagexcache/.../preferences.dat` username. For a test account, patch that key to the test name (same length avoids layout churn) *before* launching.
@@ -188,11 +196,26 @@ https://github.com/OpenRune/OpenRune-Developer-Tools (standalone sideloaded plug
    ```
    The third arg is the login watchdog in minutes — it hard-exits (killing the client) if no login happens in time, so **complete the login promptly**.
 4. Wait for `127.0.0.1:7780` to LISTEN (plugin up = client booted), then confirm `get_client_state` shows `LOGIN_SCREEN`.
-5. Open the login form with a **devtools canvas click** on "Existing User": canvas (473,295) in fixed mode (765×503) / (1022,289) maximized. Find positions deterministically with the pixel classifier `.freebuff/scratch/scan-classes.py` (white = buttons/fields, yellow = form text, red = errors) — never guess offsets; Typer7's hardcoded ones are stale for other window sizes.
+5. Open the login form with a **devtools canvas click** on "Existing User": canvas (473,295) in fixed mode (765×503) / (1022,289) maximized.   Find positions deterministically with the pixel classifier `.freebuff/scratch/scan-classes.py` (white = buttons/fields, yellow = form text, red = errors) — never guess offsets; Typer7's hardcoded ones are stale for other window sizes. (They are correct for the default 820×542 window: welcome/login button at (395,408), password row at (409,311) — `java ... Typer7 "OpenRune Server" "RSProx" <pass>` logs that window in on its own.)
 6. **The plugin's synthetic keys do NOT reach the pre-login form** — password entry must be OS-level: make the window topmost+foreground (`.freebuff/scratch/topmost.ps1 -GamePid <pid>`), calibrate the canvas↔screen offset (park the cursor at a known screen point, read back `mouseX/mouseY` from `get_client_state`; offset is linear), then one atomic script: OS-click the password row → SendKeys password → Enter (`.freebuff/scratch/login-final.ps1`).
 7. Oracles: `get_client_state` → `LOGGED_IN`; server log `Login accepted user='<test user>' ...`; driver log `ON-LOGIN`.
 
 **Gotchas checklist (each cost real time once):**
+- **Never run a Gradle build/compile/test task while `gradlew run` is live.** The running server's
+  plugin classloader reads the same class output, so replacing those files under it makes the next
+  lazily-loaded class fail (`NoClassDefFoundError: ...VampyreSlayer$openCoffin$1`) and kills the
+  server mid-session — the client then sits on a stale frame. Rebuild, *then* start the server.
+- **A client whose server died looks alive but ignores input.** It keeps rendering the last frame
+  (and even walks from OS clicks, via client-side prediction) while every chat command is silently
+  dropped, so "the API/keys don't work" usually means the server is gone. Check
+  `netstat -ano | findstr 43594` and the tail of the run log (a dead run ends in
+  `BUILD FAILED ... :server:app:run`) *before* debugging the rig. With a healthy server, the plain
+  devtools recipe works: `type_chat("::cmd", send:false)` then `press_key("ENTER")`.
+- **A bound port is not a live server.** `netstat` showing 43594 LISTENING only proves something holds
+  the socket: a run wedged on a poisoned postgres pool (`Pool is empty, failed to create/setup
+  connection`) keeps listening while answering nothing, and the client looks exactly like a broken rig.
+  Confirm the run log is still being *appended* (tail it twice, a minute apart) and check
+  `get_client_state` before debugging your input path; restart the server and re-login to clear it.
 - Only **one** driver session per `~/.rsprox` — a zombie client holding 43605 silently blocks every new driver launch. Check `netstat -ano | findstr 43605` and kill stale PIDs first.
 - RuneLite remembers maximized-vs-restored per profile; the client may come up either way. **Recalibrate the offset per window size** (fixed-mode offset ≈ (562,272) when the window is at its default position; maximized ≈ (0,+23) — but always re-measure, don't trust these numbers).
 - A login that bounces back to `LOGIN_SCREEN` ~25s after submit was **rejected by the server** — check the server log. Long-uptime servers can wedge their postgres pool (`Pool is empty, failed to create/setup connection`); a server restart fixes it.
@@ -226,5 +249,5 @@ cd %USERPROFILE%\.rsprox\launcher
 
 **Privacy/security notes:**
 - Both MCP servers are **localhost-only** and unauthenticated by design — anything on this machine can drive the game client or take screenshots. Do not port-forward or expose 7780 / the computer-control stdio bridge beyond the dev machine.
-- **No credentials in tracked files:** driver credentials come from environment variables (`run-driver.cmd` defaults are placeholders); the `.freebuff/scratch/` helper scripts (which may contain a throwaway test-account password) and `driver.log` are git-ignored. Only `Driver.java`, `Typer7.java`, and `run-driver.cmd` are tracked — verify with `git ls-files .freebuff` before committing anything new there.
+- **No credentials in tracked files:** driver credentials come from environment variables (`run-driver.cmd` defaults are placeholders); the `.freebuff/scratch/` directory (whose helpers may contain a throwaway test-account password or machine-specific paths), `driver.log` and `*.ps1` are covered by `.freebuff/.gitignore`. Only `Driver.java`, `SendCmd.java`, `Typer7.java`, and `run-driver.cmd` are tracked — verify with `git ls-files .freebuff` before committing anything new there.
 - Use **throwaway test accounts only** (e.g. `qa01`) — accounts driven by these tools are created locally against your own server and never touch real Jagex credentials or third-party services.

@@ -10,3 +10,6 @@ project-id
 *.bak
 mcp-server.json
 mcp-shots/
+
+# Scratch helpers carry machine-specific paths and may embed test-account passwords
+scratch/
