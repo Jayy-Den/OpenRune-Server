@@ -58,6 +58,13 @@ area are discarded/ignored.
 `Region.normal[...]` will resolve to the last one of these registered zones.
 Since regions register zones column by column, from bottom to top, this means
 the zone closest to the north-east boundary takes precedence.
+- `NpcRegenProcessor` spends `regenRate + 1` cycles per stat point, not
+`regenRate`: it refills its clock on the tick it regenerates and then counts
+that clock down to zero. Npc overrides in a `pack/configs` toml therefore take
+the period you want minus one - Count Draynor regenerates a point every five
+cycles (against the usual hundred), so his `regenRate` is 4 and not 5. The
+first tick after a stat is drained always regenerates, since the clock starts
+at zero. `NpcRegenProcessorTest` pins this.
 - Zone update processing occurs in a fixed order, from the bottom-left build
 area zone to the top-right zone. This means all `ZoneProt` updates are sent in
 a predictable order, rather than in the order the updates occurred. For

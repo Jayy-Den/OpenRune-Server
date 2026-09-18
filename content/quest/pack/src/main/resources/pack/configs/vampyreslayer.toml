@@ -1,0 +1,10 @@
+# Count Draynor regenerates far faster than an ordinary monster: the wiki gives him 1 point per 5
+# ticks against the usual 1 per 100. NpcRegenProcessor spends `regenRate + 1` cycles per point (it
+# refills the clock on the tick it regenerates, then counts that clock down to 0), so the value
+# here is one less than the period we want. That period is also what restores the Attack, Strength
+# and Defence the garlic drains, which is why the drain reapplies every 10 * 5 = 50 cycles - the
+# spacing the RSProx capture shows (8139, 8185, 8239).
+[[npc]]
+id = "npc.count_draynor"
+inherit = "npc.count_draynor"
+regenRate = 4
