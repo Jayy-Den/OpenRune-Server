@@ -9,7 +9,7 @@ dependencies {
     implementation(projects.content.quest)
     testImplementation(projects.content.generic.genericLocs)
     testImplementation(projects.api.hunt)
-    testImplementation(libs.fastutil)
+    implementation(libs.fastutil)
     testImplementation(projects.api.registry)
     testImplementation(projects.api.invStorage)
 }
