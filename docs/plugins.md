@@ -468,6 +468,21 @@ Beyond `docs/quirks.md`:
   anything that can fail on a fresh install.
 - `PluginGamevalMerger` only ever *appends*. Renumbering a gameval leaves the stale id behind in
   `.data/gamevals/*.rscm`; delete the line by hand or the old name keeps resolving.
+- **Merging upstream can collide with this fork's ids.** Upstream allocates `its own table max + 1`,
+  which knows nothing about the ids this fork already holds, so a content PR can land on one of
+  them (the motherlode-mine PR took `area` 59 and `dbrow` 63500-63515). The cache then fails to load
+  with `Mapping conflict in table '<table>': value '<n>' is already mapped to key '<key>'`, and the
+  first failing test is whichever one touches the cache first. Find every collision at once with
+
+  ```sh
+  for f in .data/gamevals/*.rscm; do
+    awk -F= 'NF==2 && !/^#/ {n[$2]=n[$2]" "$1; c[$2]++} END {for (v in c) if (c[v]>1) print FILENAME, v, n[v]}' "$f"
+  done
+  ```
+
+  and fix them by moving **this fork's** name to a free slot — upstream's files are not ours to
+  renumber. The ids moved for that merge sit at 40000+ (`area`) and 66000+ (`dbrow`), clear of
+  upstream's `max + 1` growth.
 - `PluginPacks.discover` scans `dev.openrune.pack` and `org.rsmod.content` only — a pack class
   outside those packages is ignored with no error.
 - The `-pack` project-name rewrite in `settings.gradle.kts` exists because Gradle would otherwise
