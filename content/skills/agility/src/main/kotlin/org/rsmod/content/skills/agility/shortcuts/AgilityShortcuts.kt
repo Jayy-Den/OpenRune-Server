@@ -159,15 +159,6 @@ object AgilityShortcuts {
                 move = Climb(),
             ),
             AgilityShortcut(
-                name = "Narrow crevice",
-                level = 42,
-                xp = 0.0,
-                locs = listOf("loc.dwarf_mines_sc_wall_crack"),
-                sideA = tile(3028, 9806),
-                sideB = tile(3035, 9806),
-                move = crawl,
-            ),
-            AgilityShortcut(
                 name = "Underwall tunnel",
                 level = 42,
                 xp = 0.0,

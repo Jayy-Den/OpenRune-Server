@@ -1,5 +1,5 @@
 [gamevals.timer]
 # Per-cycle burn timer for the candle hazard in Draynor Manor's basement. The timer map keys
-# timers as shorts, so this follows the cache timer range (the highest existing id is 121) rather
-# than the custom 63k block used by objs, dbrows and the like.
-draynor_candles = 122
+# timers as shorts, so this lives in the fork's reserved 30000+ timer band (fits a short, and
+# upstream timer ids never grow into it — see docs/plugins.md).
+draynor_candles = 30002

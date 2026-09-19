@@ -1,6 +1,7 @@
 [gamevals.timer]
-# Per-cycle soft timer that keeps Rocky following its owner.
-pet_rocky_tick = 121
+# Per-cycle soft timer that keeps Rocky following its owner. Lives in the fork's reserved
+# 30000+ timer band so upstream timer ids never grow into it (see docs/plugins.md).
+pet_rocky_tick = 30001
 
 [gamevals.synth]
 # "stunned" sound from the OSRS wiki list of sound IDs; plays when a failed pickpocket stuns you.

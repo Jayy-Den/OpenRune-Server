@@ -1,4 +1,5 @@
 [gamevals.inv]
 # Persisted holding inventory for duel stakes (see .data/raw-cache/server/inv.toml).
-# Kept in the fork's reserved 63k range: upstream's motherlode mine claims 1101.
-emirs_arena_stake = 63520
+# Kept in the fork's reserved 66020+ inv band: upstream claims 1101 (motherlode) and grows
+# upward (see docs/plugins.md).
+emirs_arena_stake = 66020

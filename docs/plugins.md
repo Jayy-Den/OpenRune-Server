@@ -189,6 +189,27 @@ Rules:
 - `gradlew :or-cache:mergePluginGamevals` appends these into `.data/gamevals/*.rscm`. This is only
   needed for CS2/Neptune symbol resolution and release builds; the merger never overwrites an
   existing key, it only appends new ones.
+- **Never allocate an id inside upstream's growth path.** Upstream allocates `its own table max + 1`
+  and hand-picks rows from the `63xxx` dbrow band, so any fork id below `66100` in those ranges will
+  eventually collide with a content PR (the motherlode-mine PR took `area` 59 and `dbrow`
+  63500-63515). Fork-invented ids live in these reserved bands:
+
+  | Table | Reserved band | Notes |
+  |---|---|---|
+  | `timer` | 30000+ | shorts; keep out of the cache range (max 121) |
+  | `queue` | 30000+ | server-internal ids, map-backed |
+  | `varn` | 30000+ | server-internal, never synced to the client |
+  | `currency` | 40000+ | upstream has only `standard_gp=0` |
+  | `inv` | 66020+ | above the 63xxx upstream picks from |
+  | `dbrow` | 66100+ | `music_modern_*` fills 66100-66675; take the next free slot after the highest |
+
+  Asset-backed ids (wiki sound ids in `synth`, real OSRS song ids in `area`) are **not** fork
+  inventions — leave those at their real ids. Cache-backed pack configs (npc/loc/obj overrides) keep
+  using the high 63xxx ranges the merger already assigns.
+- **`gradlew :or-cache:checkGamevals` fails the build on duplicate ids** — one name per id per table,
+  matching what the cache loader enforces. It runs automatically before `buildCache` and after
+  `mergePluginGamevals`; run it after merging upstream to catch collisions in one shot instead of
+  one error per cache-build attempt.
 
 ---
 

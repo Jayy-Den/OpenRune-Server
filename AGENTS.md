@@ -101,7 +101,11 @@ hardcode raw numeric ids in content code.
   `PluginGamevalMerger` walks `content/` for these files and merges them into
   `.data/gamevals` during the cache build (`mergePluginGamevals` /
   `buildCache`) — re-run it after adding or changing symbols. Custom ids sit in the
-  high range (~63000-65535 in existing modules) to stay clear of cache ids.
+  high range (~63000-65535 in existing modules) to stay clear of cache ids, and
+  fork-invented ids must use the reserved bands documented in `docs/plugins.md`
+  (timer/queue/varn 30000+, currency 40000+, inv 66020+, dbrow 66100+) — never the
+  ranges upstream grows into. `gradlew :or-cache:checkGamevals` fails the build on
+  duplicate ids within a table; it gates `buildCache`.
   Working examples: `content/events/shooting-stars`, `content/generic/generic-locs`,
   `content/interfaces/collection-log`.
 

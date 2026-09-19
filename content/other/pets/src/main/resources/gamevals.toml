@@ -9,4 +9,6 @@ sad_meeoow = 1176
 
 [gamevals.timer]
 # Per-cycle soft timer that drives a following cat: follow upkeep, growth, hunger and attention.
-pet_cat_tick = 120
+# Lives in the fork's reserved 30000+ timer band so upstream timer ids never grow into it
+# (see docs/plugins.md).
+pet_cat_tick = 30000

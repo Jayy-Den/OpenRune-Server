@@ -42,6 +42,7 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("dev.openrune.CacheToolsKt")
         args = listOf("BUILD")
+        dependsOn("checkGamevals")
     }
 
     register("freshCache",JavaExec::class) {
@@ -71,8 +72,17 @@ tasks {
         mainClass.set("dev.openrune.gamevals.PluginGamevalMergerKt")
         workingDir = rootProject.projectDir
         dependsOn("classes")
+        finalizedBy("checkGamevals")
     }
 
+    register<JavaExec>("checkGamevals") {
+        group = "cache"
+        description =
+            "Fails when two names in a .data/gamevals table (or a plugin gamevals.toml) claim the same id"
 
-
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass.set("dev.openrune.gamevals.DuplicateGamevalCheckKt")
+        workingDir = rootProject.projectDir
+        dependsOn("classes")
+    }
 }
